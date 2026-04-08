@@ -69,16 +69,15 @@ fn parse_fraction(frac_str: &str, precision: u32) -> Result<u32, Error> {
     }
 
     let p = precision as usize;
-    let normalized = if frac_str.len() >= p {
-        &frac_str[..p]
+    let chars: String = frac_str.chars().take(p).collect();
+    let normalized = if chars.len() >= p {
+        chars
     } else {
-        let mut s = frac_str.to_string();
+        let mut s = chars;
         while s.len() < p {
             s.push('0');
         }
-        return s
-            .parse::<u32>()
-            .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")));
+        s
     };
 
     normalized
@@ -91,18 +90,18 @@ fn parse_hundredths(frac_str: &str) -> Result<u32, Error> {
         return Ok(0);
     }
 
-    let normalized = if frac_str.len() >= 2 {
-        &frac_str[..2]
-    } else {
-        return frac_str[..1]
+    let chars: Vec<char> = frac_str.chars().take(2).collect();
+    if chars.len() >= 2 {
+        let normalized: String = chars.into_iter().collect();
+        normalized
             .parse::<u32>()
+            .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")))
+    } else {
+        let c: String = chars.into_iter().collect();
+        c.parse::<u32>()
             .map(|d| d * 10)
-            .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")));
-    };
-
-    normalized
-        .parse::<u32>()
-        .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")))
+            .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")))
+    }
 }
 
 fn format_decimal_words(whole: i64, hundredths: u32) -> String {
