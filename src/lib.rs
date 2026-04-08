@@ -1,21 +1,53 @@
-//! # propisyu
+//! # propisyu — числа прописью на русском языке
 //!
-//! Convert numbers to Russian words with correct grammatical gender and noun declension.
+//! Convert numbers to Russian words (числа прописью) with correct grammatical
+//! gender and noun declension.
 //!
-//! This library supports:
+//! A Rust port of [go-propisyu](https://github.com/rekurt/go-propisyu).
+//!
+//! ## Features
+//!
 //! - Numbers up to duodecillions (10^39)
-//! - Three grammatical genders (masculine, feminine, neuter)
-//! - Automatic noun declension
-//! - Decimal number support
+//! - Three grammatical genders: masculine, feminine, neuter
+//! - Automatic Russian noun declension
+//! - Decimal number support (strings and [`rust_decimal::Decimal`])
+//! - Negative numbers
+//! - Zero-allocation dictionary — all word data in `const` arrays
 //!
-//! # Examples
+//! ## Use cases
+//!
+//! - Fiscal receipts (54-FZ / 54-ФЗ)
+//! - Invoices, payment orders, contracts
+//! - Voice assistants (TTS) and chatbots
+//! - Any system that needs to spell out numbers in Russian
+//!
+//! ## Quick start
 //!
 //! ```
 //! use propisyu::{int_to_words, int_to_words_gender, decline, Gender};
 //!
+//! // Integer to words
 //! assert_eq!(int_to_words(42), "сорок два");
+//! assert_eq!(int_to_words(1_000_000), "один миллион");
+//!
+//! // With grammatical gender
+//! assert_eq!(int_to_words_gender(1, Gender::Feminine), "одна");
 //! assert_eq!(int_to_words_gender(2, Gender::Feminine), "две");
+//!
+//! // Noun declension
+//! assert_eq!(decline(1, "рубль", "рубля", "рублей"), "рубль");
 //! assert_eq!(decline(5, "рубль", "рубля", "рублей"), "рублей");
+//! ```
+//!
+//! ## Receipt example
+//!
+//! ```
+//! use propisyu::{int_to_words, decline};
+//!
+//! let amount = 1234;
+//! let words = int_to_words(amount);
+//! let currency = decline(amount, "рубль", "рубля", "рублей");
+//! assert_eq!(format!("{words} {currency}"), "одна тысяча двести тридцать четыре рубля");
 //! ```
 
 mod convert;

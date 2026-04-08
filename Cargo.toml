@@ -2,11 +2,16 @@
 name = "propisyu"
 version = "0.1.0"
 edition = "2024"
-description = "Convert numbers to Russian words with correct grammatical gender and noun declension"
+rust-version = "1.85"
+description = "Convert numbers to Russian words (числа прописью) with grammatical gender and noun declension. Supports integers, decimals, and number scales up to 10^39."
 license = "MIT"
 repository = "https://github.com/rekurt/propisyu"
+homepage = "https://github.com/rekurt/propisyu"
+documentation = "https://docs.rs/propisyu"
+readme = "README.md"
 keywords = ["russian", "numbers", "words", "declension", "propisyu"]
-categories = ["localization", "text-processing"]
+categories = ["localization", "text-processing", "value-formatting"]
+exclude = [".github/", "examples/", "tests/"]
 
 [dependencies]
 rust_decimal = { version = "1", optional = true }
@@ -14,3 +19,15 @@ rust_decimal = { version = "1", optional = true }
 [features]
 default = ["decimal"]
 decimal = ["dep:rust_decimal"]
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "receipt"
+path = "examples/receipt.rs"
+
+[[example]]
+name = "invoice"
+path = "examples/invoice.rs"
