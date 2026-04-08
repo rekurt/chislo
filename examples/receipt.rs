@@ -2,7 +2,7 @@
 //!
 //! Run with: cargo run --example receipt
 
-use propisyu::{decline, int_to_words};
+use chislo::{decline, int_to_words};
 
 fn format_amount(amount: i64) -> String {
     let words = int_to_words(amount);

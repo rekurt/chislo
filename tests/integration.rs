@@ -1,4 +1,4 @@
-use propisyu::{decimal_to_words, decline, int_to_words, int_to_words_gender, Gender};
+use chislo::{decimal_to_words, decline, int_to_words, int_to_words_gender, Gender};
 
 // ==================== IntToWords ====================
 
@@ -298,7 +298,7 @@ fn test_decimal_to_words_errors() {
 
 #[cfg(feature = "decimal")]
 mod decimal_value_tests {
-    use propisyu::decimal_value_to_words;
+    use chislo::decimal_value_to_words;
     use rust_decimal::Decimal;
     use std::str::FromStr;
 

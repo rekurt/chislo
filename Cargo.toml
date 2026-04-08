@@ -1,5 +1,5 @@
 [package]
-name = "propisyu"
+name = "chislo"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
@@ -7,9 +7,9 @@ description = "Convert numbers to Russian words (числа прописью) wi
 license = "MIT"
 repository = "https://github.com/rekurt/propisyu"
 homepage = "https://github.com/rekurt/propisyu"
-documentation = "https://docs.rs/propisyu"
+documentation = "https://docs.rs/chislo"
 readme = "README.md"
-keywords = ["russian", "numbers", "words", "declension", "propisyu"]
+keywords = ["russian", "numbers", "words", "declension", "chislo"]
 categories = ["localization", "text-processing", "value-formatting"]
 exclude = [".github/", "examples/", "tests/"]
 
