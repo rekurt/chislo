@@ -10,52 +10,56 @@
 //! - Numbers up to duodecillions (10^39)
 //! - Three grammatical genders: masculine, feminine, neuter
 //! - Automatic Russian noun declension
-//! - Decimal number support (strings and [`rust_decimal::Decimal`])
-//! - Negative numbers
-//! - Zero-allocation dictionary — all word data in `const` arrays
-//!
-//! ## Use cases
-//!
-//! - Fiscal receipts (54-FZ / 54-ФЗ)
-//! - Invoices, payment orders, contracts
-//! - Voice assistants (TTS) and chatbots
-//! - Any system that needs to spell out numbers in Russian
+//! - Ordinal numbers ("первый", "сорок второй")
+//! - Currency formatting ("один рубль двадцать три копейки")
+//! - Decimal number support with configurable precision
+//! - `no_std` compatible (with `alloc`)
 //!
 //! ## Quick start
 //!
 //! ```
-//! use chislo::{int_to_words, int_to_words_gender, decline, Gender};
+//! use chislo::{int_to_words, int_to_words_gender, decline, ordinal, Gender};
 //!
-//! // Integer to words
 //! assert_eq!(int_to_words(42), "сорок два");
-//! assert_eq!(int_to_words(1_000_000), "один миллион");
-//!
-//! // With grammatical gender
 //! assert_eq!(int_to_words_gender(1, Gender::Feminine), "одна");
-//! assert_eq!(int_to_words_gender(2, Gender::Feminine), "две");
-//!
-//! // Noun declension
-//! assert_eq!(decline(1, "рубль", "рубля", "рублей"), "рубль");
 //! assert_eq!(decline(5, "рубль", "рубля", "рублей"), "рублей");
+//! assert_eq!(ordinal(42, Gender::Masculine), "сорок второй");
 //! ```
 //!
-//! ## Receipt example
+//! ## Currency example
 //!
 //! ```
-//! use chislo::{int_to_words, decline};
+//! use chislo::{money, RUB};
 //!
-//! let amount = 1234;
-//! let words = int_to_words(amount);
-//! let currency = decline(amount, "рубль", "рубля", "рублей");
-//! assert_eq!(format!("{words} {currency}"), "одна тысяча двести тридцать четыре рубля");
+//! assert_eq!(
+//!     money(1234, 56, &RUB),
+//!     "одна тысяча двести тридцать четыре рубля пятьдесят шесть копеек"
+//! );
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 mod convert;
+mod currency;
 mod decimal;
 pub(crate) mod decline;
 mod dictionary;
+mod ordinal;
+#[cfg(feature = "wasm")]
+mod wasm;
 
+#[cfg(feature = "std")]
 use std::fmt;
+#[cfg(not(feature = "std"))]
+use core::fmt;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
+pub use currency::{Currency, EUR, RUB, USD};
 
 /// Grammatical gender for Russian number words.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,109 +90,42 @@ impl fmt::Display for Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
-/// Converts an integer to Russian words using masculine gender.
-///
-/// # Examples
-///
-/// ```
-/// use chislo::int_to_words;
-///
-/// assert_eq!(int_to_words(0), "ноль");
-/// assert_eq!(int_to_words(42), "сорок два");
-/// assert_eq!(int_to_words(-5), "минус пять");
-/// assert_eq!(int_to_words(1000), "одна тысяча");
-/// ```
 pub fn int_to_words(n: i64) -> String {
     convert::convert_int_to_words(n, Gender::Masculine)
 }
 
-/// Converts an integer to Russian words with the specified grammatical gender.
-///
-/// Gender affects the forms of "один"/"одна"/"одно" and "два"/"две".
-///
-/// # Examples
-///
-/// ```
-/// use chislo::{int_to_words_gender, Gender};
-///
-/// assert_eq!(int_to_words_gender(1, Gender::Masculine), "один");
-/// assert_eq!(int_to_words_gender(1, Gender::Feminine), "одна");
-/// assert_eq!(int_to_words_gender(1, Gender::Neuter), "одно");
-/// assert_eq!(int_to_words_gender(2, Gender::Feminine), "две");
-/// ```
 pub fn int_to_words_gender(n: i64, gender: Gender) -> String {
     convert::convert_int_to_words(n, gender)
 }
 
-/// Converts a decimal number string to Russian words.
-///
-/// The fractional part is truncated (not rounded) to 2 decimal places.
-/// Format: "{whole} целых {hundredths} {сотая/сотых}"
-///
-/// # Examples
-///
-/// ```
-/// use chislo::decimal_to_words;
-///
-/// assert_eq!(
-///     decimal_to_words("123.45").unwrap(),
-///     "сто двадцать три целых сорок пять сотых"
-/// );
-/// ```
-///
-/// # Errors
-///
-/// Returns [`Error::InvalidNumber`] if the input string is not a valid number.
+pub fn ordinal(n: i64, gender: Gender) -> String {
+    ordinal::ordinal(n, gender)
+}
+
 pub fn decimal_to_words(decimal_str: &str) -> Result<String, Error> {
     decimal::decimal_str_to_words(decimal_str)
 }
 
-/// Converts a `rust_decimal::Decimal` value to Russian words.
-///
-/// The fractional part is truncated (not rounded) to 2 decimal places.
-///
-/// # Examples
-///
-/// ```
-/// use chislo::decimal_value_to_words;
-/// use rust_decimal::Decimal;
-/// use std::str::FromStr;
-///
-/// let d = Decimal::from_str("123.45").unwrap();
-/// assert_eq!(
-///     decimal_value_to_words(d).unwrap(),
-///     "сто двадцать три целых сорок пять сотых"
-/// );
-/// ```
-///
-/// # Errors
-///
-/// Returns [`Error::NumberTooLarge`] if the integer part exceeds `i64` range.
+pub fn decimal_to_words_precision(decimal_str: &str, precision: u32) -> Result<String, Error> {
+    decimal::decimal_str_to_words_precision(decimal_str, precision)
+}
+
 #[cfg(feature = "decimal")]
 pub fn decimal_value_to_words(d: rust_decimal::Decimal) -> Result<String, Error> {
     decimal::decimal_value_to_words_impl(d)
 }
 
-/// Returns the correct Russian noun declension form based on a number.
-///
-/// # Arguments
-///
-/// * `n` - The number to determine declension for
-/// * `one` - Form for 1, 21, 31... (e.g., "рубль")
-/// * `two` - Form for 2-4, 22-24... (e.g., "рубля")
-/// * `five` - Form for 0, 5-20, 25-30... (e.g., "рублей")
-///
-/// # Examples
-///
-/// ```
-/// use chislo::decline;
-///
-/// assert_eq!(decline(1, "рубль", "рубля", "рублей"), "рубль");
-/// assert_eq!(decline(2, "рубль", "рубля", "рублей"), "рубля");
-/// assert_eq!(decline(5, "рубль", "рубля", "рублей"), "рублей");
-/// ```
 pub fn decline(n: i64, one: &str, two: &str, five: &str) -> String {
     decline::decline(n, one, two, five)
+}
+
+pub fn money(whole: i64, cents: u32, currency: &Currency) -> String {
+    currency::money(whole, cents, currency)
+}
+
+pub fn money_from_str(amount: &str, currency: &Currency) -> Result<String, Error> {
+    currency::money_from_str(amount, currency)
 }
