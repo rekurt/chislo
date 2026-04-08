@@ -2,7 +2,7 @@
 //!
 //! Run with: cargo run --example invoice
 
-use chislo::{decline, int_to_words_gender, Gender};
+use chislo::{Gender, decline, int_to_words_gender};
 
 fn format_quantity(count: i64, one: &str, two: &str, five: &str) -> String {
     let words = int_to_words_gender(count, Gender::Feminine);

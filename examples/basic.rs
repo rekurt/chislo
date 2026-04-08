@@ -2,7 +2,7 @@
 //!
 //! Run with: cargo run --example basic
 
-use chislo::{decimal_to_words, decline, int_to_words, int_to_words_gender, Gender};
+use chislo::{Gender, decimal_to_words, decline, int_to_words, int_to_words_gender};
 
 fn main() {
     // Integer to words (masculine by default)
