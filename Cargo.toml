@@ -1,0 +1,16 @@
+[package]
+name = "propisyu"
+version = "0.1.0"
+edition = "2024"
+description = "Convert numbers to Russian words with correct grammatical gender and noun declension"
+license = "MIT"
+repository = "https://github.com/rekurt/propisyu"
+keywords = ["russian", "numbers", "words", "declension", "propisyu"]
+categories = ["localization", "text-processing"]
+
+[dependencies]
+rust_decimal = { version = "1", optional = true }
+
+[features]
+default = ["decimal"]
+decimal = ["dep:rust_decimal"]
