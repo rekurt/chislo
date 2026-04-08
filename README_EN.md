@@ -1,7 +1,7 @@
-# propisyu
+# chislo
 
-[![Crates.io](https://img.shields.io/crates/v/propisyu.svg)](https://crates.io/crates/propisyu)
-[![Documentation](https://docs.rs/propisyu/badge.svg)](https://docs.rs/propisyu)
+[![Crates.io](https://img.shields.io/crates/v/chislo.svg)](https://crates.io/crates/chislo)
+[![Documentation](https://docs.rs/chislo/badge.svg)](https://docs.rs/chislo)
 [![CI](https://github.com/rekurt/propisyu/actions/workflows/ci.yml/badge.svg)](https://github.com/rekurt/propisyu/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
@@ -31,20 +31,20 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-propisyu = "0.1"
+chislo = "0.1"
 ```
 
 Without `rust_decimal` support:
 
 ```toml
 [dependencies]
-propisyu = { version = "0.1", default-features = false }
+chislo = { version = "0.1", default-features = false }
 ```
 
 ## Quick Start
 
 ```rust
-use propisyu::{int_to_words, int_to_words_gender, decline, decimal_to_words, Gender};
+use chislo::{int_to_words, int_to_words_gender, decline, decimal_to_words, Gender};
 
 // Integers
 int_to_words(42);        // "сорок два"
@@ -102,4 +102,4 @@ decimal_to_words("123.45").unwrap();
 
 ---
 
-**Keywords:** number to words russian, russian number converter, integer to text, declension, grammatical gender, Rust crate, propisyu, числа прописью
+**Keywords:** number to words russian, russian number converter, integer to text, declension, grammatical gender, Rust crate, chislo, propisyu, числа прописью

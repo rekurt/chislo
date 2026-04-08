@@ -1,4 +1,4 @@
-//! # propisyu — числа прописью на русском языке
+//! # chislo — числа прописью на русском языке
 //!
 //! Convert numbers to Russian words (числа прописью) with correct grammatical
 //! gender and noun declension.
@@ -24,7 +24,7 @@
 //! ## Quick start
 //!
 //! ```
-//! use propisyu::{int_to_words, int_to_words_gender, decline, Gender};
+//! use chislo::{int_to_words, int_to_words_gender, decline, Gender};
 //!
 //! // Integer to words
 //! assert_eq!(int_to_words(42), "сорок два");
@@ -42,7 +42,7 @@
 //! ## Receipt example
 //!
 //! ```
-//! use propisyu::{int_to_words, decline};
+//! use chislo::{int_to_words, decline};
 //!
 //! let amount = 1234;
 //! let words = int_to_words(amount);
@@ -93,7 +93,7 @@ impl std::error::Error for Error {}
 /// # Examples
 ///
 /// ```
-/// use propisyu::int_to_words;
+/// use chislo::int_to_words;
 ///
 /// assert_eq!(int_to_words(0), "ноль");
 /// assert_eq!(int_to_words(42), "сорок два");
@@ -111,7 +111,7 @@ pub fn int_to_words(n: i64) -> String {
 /// # Examples
 ///
 /// ```
-/// use propisyu::{int_to_words_gender, Gender};
+/// use chislo::{int_to_words_gender, Gender};
 ///
 /// assert_eq!(int_to_words_gender(1, Gender::Masculine), "один");
 /// assert_eq!(int_to_words_gender(1, Gender::Feminine), "одна");
@@ -130,7 +130,7 @@ pub fn int_to_words_gender(n: i64, gender: Gender) -> String {
 /// # Examples
 ///
 /// ```
-/// use propisyu::decimal_to_words;
+/// use chislo::decimal_to_words;
 ///
 /// assert_eq!(
 ///     decimal_to_words("123.45").unwrap(),
@@ -152,7 +152,7 @@ pub fn decimal_to_words(decimal_str: &str) -> Result<String, Error> {
 /// # Examples
 ///
 /// ```
-/// use propisyu::decimal_value_to_words;
+/// use chislo::decimal_value_to_words;
 /// use rust_decimal::Decimal;
 /// use std::str::FromStr;
 ///
@@ -183,7 +183,7 @@ pub fn decimal_value_to_words(d: rust_decimal::Decimal) -> Result<String, Error>
 /// # Examples
 ///
 /// ```
-/// use propisyu::decline;
+/// use chislo::decline;
 ///
 /// assert_eq!(decline(1, "рубль", "рубля", "рублей"), "рубль");
 /// assert_eq!(decline(2, "рубль", "рубля", "рублей"), "рубля");

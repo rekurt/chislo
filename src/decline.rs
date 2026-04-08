@@ -8,7 +8,7 @@
 /// # Examples
 ///
 /// ```
-/// use propisyu::decline;
+/// use chislo::decline;
 ///
 /// assert_eq!(decline(1, "рубль", "рубля", "рублей"), "рубль");
 /// assert_eq!(decline(2, "рубль", "рубля", "рублей"), "рубля");

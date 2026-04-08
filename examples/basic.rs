@@ -1,8 +1,8 @@
-//! Basic usage of the propisyu library.
+//! Basic usage of the chislo library.
 //!
 //! Run with: cargo run --example basic
 
-use propisyu::{decimal_to_words, decline, int_to_words, int_to_words_gender, Gender};
+use chislo::{decimal_to_words, decline, int_to_words, int_to_words_gender, Gender};
 
 fn main() {
     // Integer to words (masculine by default)

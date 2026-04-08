@@ -1,7 +1,7 @@
-# propisyu
+# chislo
 
-[![Crates.io](https://img.shields.io/crates/v/propisyu.svg)](https://crates.io/crates/propisyu)
-[![Documentation](https://docs.rs/propisyu/badge.svg)](https://docs.rs/propisyu)
+[![Crates.io](https://img.shields.io/crates/v/chislo.svg)](https://crates.io/crates/chislo)
+[![Documentation](https://docs.rs/chislo/badge.svg)](https://docs.rs/chislo)
 [![CI](https://github.com/rekurt/propisyu/actions/workflows/ci.yml/badge.svg)](https://github.com/rekurt/propisyu/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
@@ -31,20 +31,20 @@
 
 ```toml
 [dependencies]
-propisyu = "0.1"
+chislo = "0.1"
 ```
 
 Без поддержки `rust_decimal`:
 
 ```toml
 [dependencies]
-propisyu = { version = "0.1", default-features = false }
+chislo = { version = "0.1", default-features = false }
 ```
 
 ## Быстрый старт
 
 ```rust
-use propisyu::{int_to_words, int_to_words_gender, decline, decimal_to_words, Gender};
+use chislo::{int_to_words, int_to_words_gender, decline, decimal_to_words, Gender};
 
 // Целые числа
 int_to_words(42);       // "сорок два"
@@ -73,7 +73,7 @@ decimal_to_words("123.45").unwrap();
 ### Кассовый чек (54-ФЗ)
 
 ```rust
-use propisyu::{int_to_words, decline};
+use chislo::{int_to_words, decline};
 
 let amount = 1234;
 let words = int_to_words(amount);
@@ -85,7 +85,7 @@ println!("Итого: {words} {currency}");
 ### Счёт-фактура с количеством
 
 ```rust
-use propisyu::{int_to_words_gender, decline, Gender};
+use chislo::{int_to_words_gender, decline, Gender};
 
 let count = 21;
 let words = int_to_words_gender(count, Gender::Feminine);
@@ -97,7 +97,7 @@ println!("{words} {unit}");
 ### Платёжное поручение с копейками
 
 ```rust
-use propisyu::decimal_to_words;
+use chislo::decimal_to_words;
 
 let result = decimal_to_words("42350.50").unwrap();
 println!("{result}");
@@ -107,7 +107,7 @@ println!("{result}");
 ### С `rust_decimal::Decimal`
 
 ```rust
-use propisyu::decimal_value_to_words;
+use chislo::decimal_value_to_words;
 use rust_decimal::Decimal;
 use std::str::FromStr;
 
@@ -162,7 +162,7 @@ let result = decimal_value_to_words(d).unwrap();
 
 ## Сравнение с аналогами
 
-| Возможность | propisyu (Rust) | go-propisyu (Go) |
+| Возможность | chislo (Rust) | go-propisyu (Go) |
 |-------------|----------------|-----------------|
 | Целые числа | i64 | int |
 | Грамматический род | 3 рода | 3 рода |
@@ -182,4 +182,4 @@ let result = decimal_value_to_words(d).unwrap();
 
 ---
 
-**Ключевые слова:** числа прописью, число в текст, русский язык, склонение, конвертер чисел, Rust, number to words russian, russian number converter, declension, propisyu
+**Ключевые слова:** числа прописью, число в текст, русский язык, склонение, конвертер чисел, Rust, number to words russian, russian number converter, declension, chislo, propisyu
