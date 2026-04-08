@@ -1,24 +1,27 @@
 [package]
 name = "chislo"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
-description = "Convert numbers to Russian words (числа прописью) with grammatical gender and noun declension. Supports integers, decimals, and number scales up to 10^39."
+description = "Convert numbers to Russian words (числа прописью) with grammatical gender, noun declension, ordinals, and currency formatting. Supports integers, decimals, and number scales up to 10^39."
 license = "MIT"
 repository = "https://github.com/rekurt/propisyu"
 homepage = "https://github.com/rekurt/propisyu"
 documentation = "https://docs.rs/chislo"
 readme = "README.md"
 keywords = ["russian", "numbers", "words", "declension", "chislo"]
-categories = ["localization", "text-processing", "value-formatting"]
+categories = ["localization", "text-processing", "value-formatting", "no-std"]
 exclude = [".github/", "examples/", "tests/"]
 
 [dependencies]
-rust_decimal = { version = "1", optional = true }
+rust_decimal = { version = "1", optional = true, default-features = false }
+wasm-bindgen = { version = "0.2", optional = true }
 
 [features]
-default = ["decimal"]
+default = ["std", "decimal"]
+std = []
 decimal = ["dep:rust_decimal"]
+wasm = ["dep:wasm-bindgen", "std"]
 
 [[example]]
 name = "basic"
