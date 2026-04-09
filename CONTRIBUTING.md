@@ -7,7 +7,7 @@ Contributions are welcome! Here's how to get started:
 ```bash
 # Clone the repo
 git clone https://github.com/rekurt/propisyu.git
-cd propisyu
+cd propisyu  # repository name; crate is published as "chislo"
 
 # Run tests
 cargo test --all-features
