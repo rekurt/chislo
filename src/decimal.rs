@@ -195,4 +195,99 @@ mod tests {
         assert!(decimal_str_to_words_precision("3.5", 0).is_err());
         assert!(decimal_str_to_words_precision("3.5", 10).is_err());
     }
+
+    #[test]
+    fn test_decimal_all_precisions() {
+        let cases: &[(u32, &str)] = &[
+            (1, "семь целых одна десятая"),
+            (2, "семь целых двенадцать сотых"),
+            (3, "семь целых сто двадцать три тысячных"),
+            (4, "семь целых одна тысяча двести тридцать четыре десятитысячных"),
+            (5, "семь целых двенадцать тысяч триста сорок пять стотысячных"),
+            (6, "семь целых сто двадцать три тысячи четыреста пятьдесят шесть миллионных"),
+            (7, "семь целых один миллион двести тридцать четыре тысячи пятьсот шестьдесят семь десятимиллионных"),
+            (8, "семь целых двенадцать миллионов триста сорок пять тысяч шестьсот семьдесят восемь стомиллионных"),
+            (9, "семь целых сто двадцать три миллиона четыреста пятьдесят шесть тысяч семьсот восемьдесят девять миллиардных"),
+        ];
+        for &(precision, expected) in cases {
+            assert_eq!(
+                decimal_str_to_words_precision("7.123456789", precision).unwrap(),
+                expected,
+                "precision {precision}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_decimal_padding_and_truncation() {
+        let cases: &[(&str, u32, &str)] = &[
+            // Padding: "3.1" p3 → frac "1" padded to "100" → 100
+            ("3.1", 3, "три целых сто тысячных"),
+            // Padding: "3.5" p2 → frac "5" padded to "50" → 50
+            ("3.5", 2, "три целых пятьдесят сотых"),
+            // No fraction: "5" p2 → empty → 0
+            ("5", 2, "пять целых ноль сотых"),
+            // Truncation: "3.456" p1 → takes "4" → 4
+            ("3.456", 1, "три целых четыре десятых"),
+            // Truncation: "3.789" p2 → takes "78" → 78
+            ("3.789", 2, "три целых семьдесят восемь сотых"),
+        ];
+        for &(input, precision, expected) in cases {
+            assert_eq!(
+                decimal_str_to_words_precision(input, precision).unwrap(),
+                expected,
+                "padding/trunc(\"{input}\", {precision})"
+            );
+        }
+    }
+
+    #[test]
+    fn test_decimal_edge_cases() {
+        // Zero whole with fraction
+        assert_eq!(
+            decimal_str_to_words_precision("0.5", 1).unwrap(),
+            "ноль целых пять десятых"
+        );
+        assert_eq!(
+            decimal_str_to_words_precision("0.99", 2).unwrap(),
+            "ноль целых девяносто девять сотых"
+        );
+        // Negative decimal
+        assert_eq!(
+            decimal_str_to_words("-5.25").unwrap(),
+            "минус пять целых двадцать пять сотых"
+        );
+        assert_eq!(
+            decimal_str_to_words("-1.01").unwrap(),
+            "минус один целых одна сотая"
+        );
+        // Large whole part
+        assert_eq!(
+            decimal_str_to_words("999999.01").unwrap(),
+            "девятьсот девяносто девять тысяч девятьсот девяносто девять целых одна сотая"
+        );
+        // Error cases
+        assert!(decimal_str_to_words("").is_err());
+        assert!(decimal_str_to_words("abc").is_err());
+        assert!(decimal_str_to_words("1.2.3").is_err());
+        assert!(decimal_str_to_words("12.ab").is_err());
+    }
+
+    #[test]
+    fn test_decimal_default_hundredths_edge() {
+        let cases: &[(&str, &str)] = &[
+            ("0.00", "ноль целых ноль сотых"),
+            ("0.0", "ноль целых ноль сотых"),
+            ("0.1", "ноль целых десять сотых"),
+            ("99.99", "девяносто девять целых девяносто девять сотых"),
+            ("-1.01", "минус один целых одна сотая"),
+        ];
+        for &(input, expected) in cases {
+            assert_eq!(
+                decimal_str_to_words(input).unwrap(),
+                expected,
+                "hundredths_edge(\"{input}\")"
+            );
+        }
+    }
 }

@@ -220,4 +220,83 @@ mod tests {
         assert_eq!(ordinal(-1, Gender::Masculine), "минус первый");
         assert_eq!(ordinal(-42, Gender::Feminine), "минус сорок вторая");
     }
+
+    #[test]
+    fn test_ordinal_all_digits_all_genders() {
+        let cases: &[(i64, Gender, &str)] = &[
+            (1, Gender::Masculine, "первый"),
+            (1, Gender::Feminine, "первая"),
+            (1, Gender::Neuter, "первое"),
+            (2, Gender::Masculine, "второй"),
+            (2, Gender::Feminine, "вторая"),
+            (2, Gender::Neuter, "второе"),
+            (3, Gender::Masculine, "третий"),
+            (3, Gender::Feminine, "третья"),
+            (3, Gender::Neuter, "третье"),
+            (4, Gender::Masculine, "четвёртый"),
+            (4, Gender::Feminine, "четвёртая"),
+            (4, Gender::Neuter, "четвёртое"),
+            (5, Gender::Masculine, "пятый"),
+            (5, Gender::Feminine, "пятая"),
+            (5, Gender::Neuter, "пятое"),
+            (6, Gender::Masculine, "шестой"),
+            (6, Gender::Feminine, "шестая"),
+            (6, Gender::Neuter, "шестое"),
+            (7, Gender::Masculine, "седьмой"),
+            (7, Gender::Feminine, "седьмая"),
+            (7, Gender::Neuter, "седьмое"),
+            (8, Gender::Masculine, "восьмой"),
+            (8, Gender::Feminine, "восьмая"),
+            (8, Gender::Neuter, "восьмое"),
+            (9, Gender::Masculine, "девятый"),
+            (9, Gender::Feminine, "девятая"),
+            (9, Gender::Neuter, "девятое"),
+        ];
+        for &(n, gender, expected) in cases {
+            assert_eq!(
+                ordinal(n, gender),
+                expected,
+                "ordinal({n}, {gender:?})"
+            );
+        }
+    }
+
+    #[test]
+    fn test_ordinal_compound_hundreds() {
+        let cases: &[(i64, Gender, &str)] = &[
+            (115, Gender::Masculine, "сто пятнадцатый"),
+            (115, Gender::Feminine, "сто пятнадцатая"),
+            (342, Gender::Masculine, "триста сорок второй"),
+            (342, Gender::Feminine, "триста сорок вторая"),
+            (899, Gender::Masculine, "восемьсот девяносто девятый"),
+            (250, Gender::Masculine, "двести пятидесятый"),
+            (400, Gender::Masculine, "четырёхсотый"),
+            (600, Gender::Feminine, "шестисотая"),
+            (711, Gender::Neuter, "семьсот одиннадцатое"),
+        ];
+        for &(n, gender, expected) in cases {
+            assert_eq!(
+                ordinal(n, gender),
+                expected,
+                "ordinal({n}, {gender:?})"
+            );
+        }
+    }
+
+    #[test]
+    fn test_ordinal_large_round() {
+        let cases: &[(i64, Gender, &str)] = &[
+            (1_000_000_000, Gender::Masculine, "миллиардный"),
+            (1_000_000_000, Gender::Feminine, "миллиардная"),
+            (9_000_000_000, Gender::Masculine, "девятимиллиардный"),
+            (1_000_000_000_000, Gender::Masculine, "триллионный"),
+        ];
+        for &(n, gender, expected) in cases {
+            assert_eq!(
+                ordinal(n, gender),
+                expected,
+                "ordinal({n}, {gender:?})"
+            );
+        }
+    }
 }

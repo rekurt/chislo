@@ -1,4 +1,7 @@
-use chislo::{Gender, decimal_to_words, decline, int_to_words, int_to_words_gender};
+use chislo::{
+    Gender, decimal_to_words, decimal_to_words_precision, decline, int_to_words,
+    int_to_words_gender, money, money_from_str, ordinal, EUR, RUB, USD,
+};
 
 #[test]
 fn test_int_to_words_zero() {
@@ -73,4 +76,65 @@ fn test_invoice_feminine() {
     let words = int_to_words_gender(count, Gender::Feminine);
     let unit = decline(count, "штука", "штуки", "штук");
     assert_eq!(format!("{words} {unit}"), "двадцать одна штука");
+}
+
+#[test]
+fn test_ordinal_integration() {
+    let cases: &[(i64, Gender, &str)] = &[
+        (1, Gender::Masculine, "первый"),
+        (42, Gender::Feminine, "сорок вторая"),
+        (100, Gender::Masculine, "сотый"),
+        (2026, Gender::Masculine, "две тысячи двадцать шестой"),
+        (1_000_000, Gender::Feminine, "миллионная"),
+    ];
+    for &(n, gender, expected) in cases {
+        assert_eq!(ordinal(n, gender), expected, "ordinal({n})");
+    }
+}
+
+#[test]
+fn test_money_integration() {
+    assert_eq!(money(1, 1, &RUB), "один рубль одна копейка");
+    assert_eq!(
+        money(1000, 50, &USD),
+        "одна тысяча долларов пятьдесят центов"
+    );
+    assert_eq!(
+        money_from_str("99.99", &EUR).unwrap(),
+        "девяносто девять евро девяносто девять центов"
+    );
+}
+
+#[test]
+fn test_decimal_precision_integration() {
+    assert_eq!(
+        decimal_to_words_precision("3.14", 2).unwrap(),
+        "три целых четырнадцать сотых"
+    );
+    assert_eq!(
+        decimal_to_words_precision("1.5", 1).unwrap(),
+        "один целых пять десятых"
+    );
+}
+
+#[test]
+fn test_real_world_payment_order() {
+    let payment = money_from_str("42350.50", &RUB).unwrap();
+    assert_eq!(
+        payment,
+        "сорок две тысячи триста пятьдесят рублей пятьдесят копеек"
+    );
+    let order_number = ordinal(156, Gender::Masculine);
+    assert_eq!(order_number, "сто пятьдесят шестой");
+}
+
+#[test]
+fn test_boundary_integration() {
+    let max_words = int_to_words(i64::MAX);
+    assert!(max_words.starts_with("девять квинтиллионов"));
+    assert!(!max_words.contains("  "));
+
+    let min_words = int_to_words(i64::MIN);
+    assert!(min_words.starts_with("минус девять квинтиллионов"));
+    assert!(!min_words.contains("  "));
 }
