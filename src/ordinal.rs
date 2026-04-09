@@ -253,11 +253,7 @@ mod tests {
             (9, Gender::Neuter, "девятое"),
         ];
         for &(n, gender, expected) in cases {
-            assert_eq!(
-                ordinal(n, gender),
-                expected,
-                "ordinal({n}, {gender:?})"
-            );
+            assert_eq!(ordinal(n, gender), expected, "ordinal({n}, {gender:?})");
         }
     }
 
@@ -275,11 +271,7 @@ mod tests {
             (711, Gender::Neuter, "семьсот одиннадцатое"),
         ];
         for &(n, gender, expected) in cases {
-            assert_eq!(
-                ordinal(n, gender),
-                expected,
-                "ordinal({n}, {gender:?})"
-            );
+            assert_eq!(ordinal(n, gender), expected, "ordinal({n}, {gender:?})");
         }
     }
 
@@ -292,11 +284,7 @@ mod tests {
             (1_000_000_000_000, Gender::Masculine, "триллионный"),
         ];
         for &(n, gender, expected) in cases {
-            assert_eq!(
-                ordinal(n, gender),
-                expected,
-                "ordinal({n}, {gender:?})"
-            );
+            assert_eq!(ordinal(n, gender), expected, "ordinal({n}, {gender:?})");
         }
     }
 }

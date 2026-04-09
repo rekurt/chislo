@@ -1,6 +1,6 @@
 use chislo::{
-    Gender, decimal_to_words, decimal_to_words_precision, decline, int_to_words,
-    int_to_words_gender, money, money_from_str, ordinal, EUR, RUB, USD,
+    EUR, Gender, RUB, USD, decimal_to_words, decimal_to_words_precision, decline, int_to_words,
+    int_to_words_gender, money, money_from_str, ordinal,
 };
 
 #[test]
