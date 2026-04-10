@@ -144,6 +144,97 @@ decimal_to_words_precision("3.14159", 5).unwrap();
 // "три целых четырнадцать тысяч сто пятьдесят девять стотысячных"
 ```
 
+## Non-obvious Examples
+
+The library shines beyond accounting — here are some unexpected use cases.
+
+### Text quest — all three genders at once
+
+```rust
+use chislo::{int_to_words_gender, decline, Gender};
+
+let loot = [
+    (247, Gender::Feminine,  ("монета", "монеты", "монет")),
+    (3,   Gender::Neuter,    ("зелье",  "зелья",  "зелий")),
+    (1,   Gender::Masculine, ("меч",    "меча",   "мечей")),
+];
+
+println!("⚔ Dungeon loot:");
+for (count, gender, (one, two, five)) in loot {
+    let words = int_to_words_gender(count, gender);
+    let unit = decline(count, one, two, five);
+    println!("  → {words} {unit}");
+}
+// ⚔ Dungeon loot:
+//   → двести сорок семь монет
+//   → три зелья
+//   → один меч
+```
+
+A single loop handles all three grammatical genders with correct declension.
+
+### Historical dates
+
+```rust
+use chislo::{ordinal, Gender};
+
+let events = [
+    (1961, "Gagarin in space"),
+    (1945, "Victory Day"),
+    (2026, "Today"),
+];
+
+for (year, event) in events {
+    println!("{event}: {} год", ordinal(year, Gender::Masculine));
+}
+// Gagarin in space: одна тысяча девятьсот шестьдесят первый год
+// Victory Day:      одна тысяча девятьсот сорок пятый год
+// Today:            две тысячи двадцать шестой год
+```
+
+### Receipt with line items
+
+```rust
+use chislo::{int_to_words_gender, decline, money, Gender, RUB};
+
+struct Item { name: &'static str, qty: i64, price: i64 }
+
+let items = [
+    Item { name: "Milk 3.2%",        qty: 2, price: 89  },
+    Item { name: "Borodinsky bread", qty: 1, price: 65  },
+    Item { name: "Russian cheese",   qty: 3, price: 245 },
+];
+
+for item in &items {
+    let qty = int_to_words_gender(item.qty, Gender::Feminine);
+    let unit = decline(item.qty, "штука", "штуки", "штук");
+    println!("  {} × {} = {} ₽  ({qty} {unit})",
+        item.name, item.qty, item.qty * item.price);
+}
+
+let total: i64 = items.iter().map(|i| i.qty * i.price).sum();
+println!("TOTAL: {}", money(total, 0, &RUB));
+// TOTAL: девятьсот семьдесят восемь рублей ноль копеек
+```
+
+### Scientific constants in words
+
+```rust
+use chislo::{int_to_words, decimal_to_words_precision, decline};
+
+let c = 299_792_458i64; // speed of light, m/s
+let c_words = int_to_words(c);
+let m = decline(c, "метр", "метра", "метров");
+println!("Speed of light: {c_words} {m} в секунду");
+// Speed of light: двести девяносто девять миллионов семьсот
+// девяносто две тысячи четыреста пятьдесят восемь метров в секунду
+
+let pi = decimal_to_words_precision("3.14159265", 8).unwrap();
+println!("π ≈ {pi}");
+// π ≈ три целых четырнадцать миллионов сто пятьдесят девять
+// тысяч двести шестьдесят пять стомиллионных
+```
+
 ## `no_std` Support
 
 The library supports `no_std` with an allocator:

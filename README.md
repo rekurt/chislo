@@ -170,6 +170,100 @@ let result = decimal_value_to_words(d).unwrap();
 // девяносто девять целых девяносто девять сотых
 ```
 
+## Неочевидные примеры
+
+Библиотека полезна не только для бухгалтерии — вот несколько неожиданных use cases.
+
+### Текстовый квест — все три рода разом
+
+```rust
+use chislo::{int_to_words_gender, decline, Gender};
+
+let loot = [
+    (247, Gender::Feminine,  ("монета", "монеты", "монет")),
+    (3,   Gender::Neuter,    ("зелье",  "зелья",  "зелий")),
+    (1,   Gender::Masculine, ("меч",    "меча",   "мечей")),
+];
+
+println!("⚔ Добыча из подземелья:");
+for (count, gender, (one, two, five)) in loot {
+    let words = int_to_words_gender(count, gender);
+    let unit = decline(count, one, two, five);
+    println!("  → {words} {unit}");
+}
+// ⚔ Добыча из подземелья:
+//   → двести сорок семь монет
+//   → три зелья
+//   → один меч
+```
+
+Один цикл — и все три грамматических рода с правильным склонением.
+
+### Исторические даты
+
+```rust
+use chislo::{ordinal, Gender};
+
+let events = [
+    (1961, "Гагарин в космосе"),
+    (1945, "День Победы"),
+    (2026, "Сегодня"),
+];
+
+for (year, event) in events {
+    println!("{event}: {} год", ordinal(year, Gender::Masculine));
+}
+// Гагарин в космосе: одна тысяча девятьсот шестьдесят первый год
+// День Победы:       одна тысяча девятьсот сорок пятый год
+// Сегодня:           две тысячи двадцать шестой год
+```
+
+### Кассовый чек с позициями
+
+```rust
+use chislo::{int_to_words_gender, decline, money, Gender, RUB};
+
+struct Item { name: &'static str, qty: i64, price: i64 }
+
+let items = [
+    Item { name: "Молоко 3.2%",      qty: 2, price: 89  },
+    Item { name: "Хлеб бородинский", qty: 1, price: 65  },
+    Item { name: "Сыр Российский",   qty: 3, price: 245 },
+];
+
+for item in &items {
+    let qty = int_to_words_gender(item.qty, Gender::Feminine);
+    let unit = decline(item.qty, "штука", "штуки", "штук");
+    println!("  {} × {} = {} ₽  ({qty} {unit})",
+        item.name, item.qty, item.qty * item.price);
+}
+
+let total: i64 = items.iter().map(|i| i.qty * i.price).sum();
+println!("ИТОГО: {}", money(total, 0, &RUB));
+//   Молоко 3.2%      × 2 = 178 ₽  (две штуки)
+//   Хлеб бородинский × 1 = 65 ₽   (одна штука)
+//   Сыр Российский   × 3 = 735 ₽  (три штуки)
+// ИТОГО: девятьсот семьдесят восемь рублей ноль копеек
+```
+
+### Научные константы прописью
+
+```rust
+use chislo::{int_to_words, decimal_to_words_precision, decline};
+
+let c = 299_792_458i64; // скорость света, м/с
+let c_words = int_to_words(c);
+let m = decline(c, "метр", "метра", "метров");
+println!("Скорость света: {c_words} {m} в секунду");
+// Скорость света: двести девяносто девять миллионов семьсот
+// девяносто две тысячи четыреста пятьдесят восемь метров в секунду
+
+let pi = decimal_to_words_precision("3.14159265", 8).unwrap();
+println!("π ≈ {pi}");
+// π ≈ три целых четырнадцать миллионов сто пятьдесят девять
+// тысяч двести шестьдесят пять стомиллионных
+```
+
 ## API
 
 | Функция | Описание |
