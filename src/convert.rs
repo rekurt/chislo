@@ -6,18 +6,19 @@ use alloc::{
 
 use crate::Gender;
 use crate::decline::get_declension;
-use crate::dictionary::{HUNDREDS, ONES, ORDERS, TEENS, TENS};
+use crate::dictionary::{HUNDREDS, MINUS, ONES, ORDERS, TEENS, TENS, ZERO};
 
 /// Converts an integer to Russian words with the specified gender.
 pub(crate) fn convert_int_to_words(n: i64, gender: Gender) -> String {
     if n == 0 {
-        return "ноль".to_string();
+        return ZERO.to_string();
     }
 
     let mut result = String::new();
 
     if n < 0 {
-        result.push_str("минус ");
+        result.push_str(MINUS);
+        result.push(' ');
     }
 
     let mut abs_n = (n as i128).unsigned_abs() as u64;
@@ -79,16 +80,16 @@ fn triad_to_words(n: u32, order: usize, base_gender: Gender) -> String {
         }
 
         if o > 0 {
-            // Determine gender form index
+            // Determine gender form index (0=masculine, 1=feminine, 2=neuter)
             let gender_idx = if order == 0 {
                 // Ones place: use specified gender
-                clamp_gender(base_gender)
+                base_gender.index()
             } else if order == 1 {
                 // Thousands: always feminine
-                2
+                Gender::Feminine.index()
             } else {
                 // Other orders: always masculine
-                1
+                Gender::Masculine.index()
             };
 
             parts.push(ONES[o - 1][gender_idx]);
@@ -96,15 +97,6 @@ fn triad_to_words(n: u32, order: usize, base_gender: Gender) -> String {
     }
 
     parts.join(" ")
-}
-
-/// Maps Gender enum to array index, defaulting to masculine (1) for invalid values.
-fn clamp_gender(g: Gender) -> usize {
-    match g {
-        Gender::Masculine => 1,
-        Gender::Feminine => 2,
-        Gender::Neuter => 3,
-    }
 }
 
 #[cfg(test)]

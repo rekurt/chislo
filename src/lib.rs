@@ -44,32 +44,51 @@ extern crate alloc;
 
 mod convert;
 mod currency;
-mod decimal;
+mod datetime;
+pub(crate) mod decimal;
 pub(crate) mod decline;
 mod dictionary;
+mod display;
+mod duration;
+mod fraction;
 mod ordinal;
+mod parse;
+mod percent;
 #[cfg(feature = "wasm")]
 mod wasm;
 
-#[cfg(not(feature = "std"))]
 use core::fmt;
-#[cfg(feature = "std")]
-use std::fmt;
 
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
 
-pub use currency::{Currency, EUR, RUB, USD};
+pub use currency::{AED, BYN, CHF, CNY, Currency, EUR, GBP, JPY, KZT, RUB, RoundingMode, UAH, USD};
+pub use datetime::{date_to_words, month_name, time_to_words, year_to_words};
+pub use display::{GenderedNumber, MoneyAmount, Number, NumberWithNoun, OrdinalNumber};
+pub use duration::{
+    duration_from_core, duration_from_secs, duration_hms, hours_word, minutes_word, seconds_word,
+};
+pub use fraction::{fraction, mixed_fraction};
+pub use percent::{percent, percent_decimal, percent_decimal_precision, percent_word};
 
 /// Grammatical gender for Russian number words.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Gender {
     /// Masculine: "один", "два"
-    Masculine = 1,
+    Masculine = 0,
     /// Feminine: "одна", "две"
-    Feminine = 2,
+    Feminine = 1,
     /// Neuter: "одно", "два"
-    Neuter = 3,
+    Neuter = 2,
+}
+
+impl Gender {
+    /// Returns a 0-based index suitable for `[masculine, feminine, neuter]`
+    /// lookup tables.
+    #[inline]
+    pub(crate) const fn index(self) -> usize {
+        self as usize
+    }
 }
 
 /// Error type for number conversion.
@@ -90,8 +109,7 @@ impl fmt::Display for Error {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}
 
 /// Converts an integer to Russian words using masculine gender.
 ///
@@ -240,4 +258,26 @@ pub fn money(whole: i64, cents: u32, currency: &Currency) -> String {
 /// ```
 pub fn money_from_str(amount: &str, currency: &Currency) -> Result<String, Error> {
     currency::money_from_str(amount, currency)
+}
+
+/// Parses an amount string with the given rounding mode and formats it
+/// as words with the specified currency. Accepts both `.` and `,` as
+/// decimal separators.
+///
+/// # Examples
+///
+/// ```
+/// use chislo::{money_from_str_rounded, RoundingMode, RUB};
+///
+/// assert_eq!(
+///     money_from_str_rounded("100.995", &RUB, RoundingMode::HalfUp).unwrap(),
+///     "сто один рубль ноль копеек"
+/// );
+/// ```
+pub fn money_from_str_rounded(
+    amount: &str,
+    currency: &Currency,
+    mode: RoundingMode,
+) -> Result<String, Error> {
+    currency::money_from_str_rounded(amount, currency, mode)
 }

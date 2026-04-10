@@ -1,9 +1,14 @@
+[workspace]
+# Exclude the fuzz sub-crate from the default workspace so `cargo build`
+# from the repo root does not require libfuzzer toolchain.
+exclude = ["fuzz"]
+
 [package]
 name = "chislo"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85"
-description = "Convert numbers to Russian words (числа прописью) with grammatical gender, noun declension, ordinals, and currency formatting. Supports integers, decimals, and number scales up to 10^39."
+description = "Convert numbers to Russian words (числа прописью) with grammatical gender, noun declension, ordinals, currency, percentages, durations and dates. Supports integers, decimals, and number scales up to 10^39."
 license = "MIT"
 repository = "https://github.com/rekurt/propisyu"
 homepage = "https://github.com/rekurt/propisyu"
@@ -11,11 +16,14 @@ documentation = "https://docs.rs/chislo"
 readme = "README.md"
 keywords = ["russian", "numbers", "words", "declension", "chislo"]
 categories = ["localization", "text-processing", "value-formatting", "no-std"]
-exclude = [".github/", "examples/", "tests/"]
+exclude = [".github/", "examples/", "tests/", "benches/", "fuzz/"]
 
 [dependencies]
 rust_decimal = { version = "1", optional = true, default-features = false }
 wasm-bindgen = { version = "0.2", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["html_reports"] }
 
 [features]
 default = ["std", "decimal"]
@@ -34,3 +42,19 @@ path = "examples/receipt.rs"
 [[example]]
 name = "invoice"
 path = "examples/invoice.rs"
+
+[[example]]
+name = "percent"
+path = "examples/percent.rs"
+
+[[example]]
+name = "duration"
+path = "examples/duration.rs"
+
+[[example]]
+name = "date"
+path = "examples/date.rs"
+
+[[bench]]
+name = "conversion"
+harness = false

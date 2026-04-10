@@ -25,17 +25,18 @@ use crate::dictionary::*;
 /// assert_eq!(ordinal(2026, Gender::Masculine), "две тысячи двадцать шестой");
 /// ```
 pub fn ordinal(n: i64, gender: Gender) -> String {
-    let gi = gender_index(gender);
+    let gi = gender.index();
 
     if n == 0 {
-        return ["нулевой", "нулевая", "нулевое"][gi].to_string();
+        return ZERO_ORDINAL[gi].to_string();
     }
 
     let abs_n = (n as i128).unsigned_abs() as u64;
     let mut result = String::new();
 
     if n < 0 {
-        result.push_str("минус ");
+        result.push_str(MINUS);
+        result.push(' ');
     }
 
     let last_triad = (abs_n % 1000) as u32;
@@ -118,14 +119,6 @@ fn ordinal_round_order(n: u64, gi: usize) -> String {
         let cardinal = convert_int_to_words(remaining as i64, Gender::Masculine);
         let suffix = ORDINAL_ORDERS[order][gi];
         format!("{cardinal} {suffix}")
-    }
-}
-
-fn gender_index(g: Gender) -> usize {
-    match g {
-        Gender::Masculine => 0,
-        Gender::Feminine => 1,
-        Gender::Neuter => 2,
     }
 }
 

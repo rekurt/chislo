@@ -60,6 +60,20 @@ fn test_decimal_to_words_one_hundredth() {
 }
 
 #[test]
+fn test_decimal_to_words_whole_feminine() {
+    // Целая часть дроби всегда в женском роде (согласование с "целая").
+    assert_eq!(decimal_to_words("1.01").unwrap(), "одна целая одна сотая");
+    assert_eq!(
+        decimal_to_words("2.5").unwrap(),
+        "две целых пятьдесят сотых"
+    );
+    assert_eq!(
+        decimal_to_words("21.25").unwrap(),
+        "двадцать одна целая двадцать пять сотых"
+    );
+}
+
+#[test]
 fn test_receipt_example() {
     let amount = 1234;
     let words = int_to_words(amount);
@@ -113,7 +127,7 @@ fn test_decimal_precision_integration() {
     );
     assert_eq!(
         decimal_to_words_precision("1.5", 1).unwrap(),
-        "один целых пять десятых"
+        "одна целая пять десятых"
     );
 }
 

@@ -1,26 +1,14 @@
 #[cfg(not(feature = "std"))]
-use alloc::{
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{format, string::String};
 
 use crate::convert::convert_int_to_words;
 use crate::decline::get_declension;
-use crate::dictionary::FRACTION_UNITS;
+use crate::dictionary::{FRACTION_UNITS, WHOLE_FORMS};
+use crate::parse::{parse_fractional_digits, split_decimal};
 use crate::{Error, Gender};
 
 pub(crate) fn decimal_str_to_words(decimal_str: &str) -> Result<String, Error> {
-    let parts: Vec<&str> = decimal_str.splitn(2, '.').collect();
-
-    let whole_str = parts[0];
-    let whole: i64 = whole_str
-        .parse()
-        .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
-
-    let frac_str = if parts.len() > 1 { parts[1] } else { "00" };
-    let hundredths = parse_hundredths(frac_str)?;
-    Ok(format_decimal_words(whole, hundredths))
+    decimal_str_to_words_precision(decimal_str, 2)
 }
 
 #[cfg(feature = "decimal")]
@@ -31,7 +19,7 @@ pub(crate) fn decimal_value_to_words_impl(d: rust_decimal::Decimal) -> Result<St
     let fractional = (d - d.trunc()).abs();
     let hundredths_dec = (fractional * rust_decimal::Decimal::from(100)).trunc();
     let hundredths = hundredths_dec.to_i64().ok_or(Error::NumberTooLarge)? as u32;
-    Ok(format_decimal_words(whole, hundredths))
+    Ok(format_decimal(whole, hundredths, 2))
 }
 
 pub(crate) fn decimal_str_to_words_precision(
@@ -44,72 +32,37 @@ pub(crate) fn decimal_str_to_words_precision(
         )));
     }
 
-    let parts: Vec<&str> = decimal_str.splitn(2, '.').collect();
-
-    let whole_str = parts[0];
+    let (whole_str, frac_opt) = split_decimal(decimal_str);
     let whole: i64 = whole_str
         .parse()
         .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
 
-    let frac_str = if parts.len() > 1 { parts[1] } else { "" };
-    let frac_value = parse_fraction(frac_str, precision)?;
+    let frac_value = parse_fractional_digits(frac_opt.unwrap_or(""), precision)?;
 
-    let units = &FRACTION_UNITS[precision as usize - 1];
+    Ok(format_decimal(whole, frac_value, precision))
+}
 
-    let whole_words = convert_int_to_words(whole, Gender::Masculine);
+/// Public-in-crate shortcut used by modules that have already parsed the
+/// whole and fractional components (e.g. `percent_decimal`).
+pub(crate) fn decimal_str_to_words_precision_for(
+    whole: i64,
+    frac_value: u32,
+    precision: u32,
+) -> String {
+    format_decimal(whole, frac_value, precision)
+}
+
+/// Formats `{whole} целая/целых {frac} <unit>` with correct gender and
+/// declension of both the whole part and the fractional unit.
+fn format_decimal(whole: i64, frac_value: u32, precision: u32) -> String {
+    let whole_words = convert_int_to_words(whole, Gender::Feminine);
+    let whole_decl = get_declension(whole, WHOLE_FORMS.0, WHOLE_FORMS.1, WHOLE_FORMS.2);
+
     let frac_words = convert_int_to_words(frac_value as i64, Gender::Feminine);
+    let units = &FRACTION_UNITS[precision as usize - 1];
     let frac_decl = get_declension(frac_value as i64, units[0], units[1], units[2]);
 
-    Ok(format!("{whole_words} целых {frac_words} {frac_decl}"))
-}
-
-fn parse_fraction(frac_str: &str, precision: u32) -> Result<u32, Error> {
-    if frac_str.is_empty() {
-        return Ok(0);
-    }
-
-    let p = precision as usize;
-    let chars: String = frac_str.chars().take(p).collect();
-    let normalized = if chars.len() >= p {
-        chars
-    } else {
-        let mut s = chars;
-        while s.len() < p {
-            s.push('0');
-        }
-        s
-    };
-
-    normalized
-        .parse::<u32>()
-        .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")))
-}
-
-fn parse_hundredths(frac_str: &str) -> Result<u32, Error> {
-    if frac_str.is_empty() {
-        return Ok(0);
-    }
-
-    let chars: Vec<char> = frac_str.chars().take(2).collect();
-    if chars.len() >= 2 {
-        let normalized: String = chars.into_iter().collect();
-        normalized
-            .parse::<u32>()
-            .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")))
-    } else {
-        let c: String = chars.into_iter().collect();
-        c.parse::<u32>()
-            .map(|d| d * 10)
-            .map_err(|_| Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'")))
-    }
-}
-
-fn format_decimal_words(whole: i64, hundredths: u32) -> String {
-    let whole_words = convert_int_to_words(whole, Gender::Masculine);
-    let hundredths_words = convert_int_to_words(hundredths as i64, Gender::Feminine);
-    let hundredths_declension = get_declension(hundredths as i64, "сотая", "сотых", "сотых");
-
-    format!("{whole_words} целых {hundredths_words} {hundredths_declension}")
+    format!("{whole_words} {whole_decl} {frac_words} {frac_decl}")
 }
 
 #[cfg(test)]
@@ -143,9 +96,29 @@ mod tests {
     }
 
     #[test]
-    fn test_decimal_to_words_whole_feminine() {
-        let result = decimal_str_to_words("1.01").unwrap();
-        assert_eq!(result, "один целых одна сотая");
+    fn test_decimal_whole_feminine_gender() {
+        // Целая часть дроби согласуется с подразумеваемым "целая" (ж.р.),
+        // поэтому "одна целая", "две целых", "пять целых" и т.д.
+        assert_eq!(
+            decimal_str_to_words("1.01").unwrap(),
+            "одна целая одна сотая"
+        );
+        assert_eq!(
+            decimal_str_to_words("2.5").unwrap(),
+            "две целых пятьдесят сотых"
+        );
+        assert_eq!(
+            decimal_str_to_words("5.5").unwrap(),
+            "пять целых пятьдесят сотых"
+        );
+        assert_eq!(
+            decimal_str_to_words("21.03").unwrap(),
+            "двадцать одна целая три сотых"
+        );
+        assert_eq!(
+            decimal_str_to_words("22.5").unwrap(),
+            "двадцать две целых пятьдесят сотых"
+        );
     }
 
     #[cfg(feature = "decimal")]
@@ -157,6 +130,8 @@ mod tests {
         let cases = [
             ("123.45", "сто двадцать три целых сорок пять сотых"),
             ("0.00", "ноль целых ноль сотых"),
+            ("1.50", "одна целая пятьдесят сотых"),
+            ("2.25", "две целых двадцать пять сотых"),
         ];
 
         for (input, expected) in cases {
@@ -277,12 +252,17 @@ mod tests {
         );
         assert_eq!(
             decimal_str_to_words("-1.01").unwrap(),
-            "минус один целых одна сотая"
+            "минус одна целая одна сотая"
         );
         // Large whole part
         assert_eq!(
             decimal_str_to_words("999999.01").unwrap(),
             "девятьсот девяносто девять тысяч девятьсот девяносто девять целых одна сотая"
+        );
+        // Comma as decimal separator
+        assert_eq!(
+            decimal_str_to_words("1,5").unwrap(),
+            "одна целая пятьдесят сотых"
         );
         // Error cases
         assert!(decimal_str_to_words("").is_err());
@@ -298,7 +278,7 @@ mod tests {
             ("0.0", "ноль целых ноль сотых"),
             ("0.1", "ноль целых десять сотых"),
             ("99.99", "девяносто девять целых девяносто девять сотых"),
-            ("-1.01", "минус один целых одна сотая"),
+            ("-1.01", "минус одна целая одна сотая"),
         ];
         for &(input, expected) in cases {
             assert_eq!(
