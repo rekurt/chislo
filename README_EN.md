@@ -16,7 +16,7 @@ Rust port of [go-propisyu](https://github.com/rekurt/go-propisyu).
 
 ## Features
 
-- Numbers up to duodecillions (10^39)
+- Integers in the `i64` range (≈ 9.22 × 10^18, quintillions); scale dictionary goes up to duodecillions (10^39)
 - Three grammatical genders: masculine, feminine, neuter
 - Automatic noun declension by number
 - Ordinal numbers ("первый", "сорок второй", "двухтысячный")

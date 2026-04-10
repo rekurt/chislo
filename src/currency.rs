@@ -48,11 +48,16 @@ pub fn money(whole: i64, cents: u32, currency: &Currency) -> String {
 }
 
 pub fn money_from_str(amount: &str, currency: &Currency) -> Result<String, crate::Error> {
-    let parts: Vec<&str> = amount.splitn(2, '.').collect();
+    let (negative, rest) = match amount.strip_prefix('-') {
+        Some(r) => (true, r),
+        None => (false, amount),
+    };
+    let parts: Vec<&str> = rest.splitn(2, '.').collect();
 
-    let whole: i64 = parts[0]
+    let whole_abs: i64 = parts[0]
         .parse()
         .map_err(|_| crate::Error::InvalidNumber(format!("invalid amount: '{}'", parts[0])))?;
+    let whole = if negative { -whole_abs } else { whole_abs };
 
     let cents = if parts.len() > 1 {
         parse_cents(parts[1])?
@@ -60,7 +65,12 @@ pub fn money_from_str(amount: &str, currency: &Currency) -> Result<String, crate
         0
     };
 
-    Ok(money(whole, cents, currency))
+    let result = money(whole, cents, currency);
+    if negative && whole_abs == 0 {
+        Ok(format!("минус {result}"))
+    } else {
+        Ok(result)
+    }
 }
 
 fn parse_cents(frac_str: &str) -> Result<u32, crate::Error> {
@@ -189,6 +199,26 @@ mod tests {
         // Error cases
         assert!(money_from_str("abc", &RUB).is_err());
         assert!(money_from_str("", &RUB).is_err());
+    }
+
+    #[test]
+    fn test_money_from_str_negative() {
+        assert_eq!(
+            money_from_str("-1234.56", &RUB).unwrap(),
+            "минус одна тысяча двести тридцать четыре рубля пятьдесят шесть копеек"
+        );
+        assert_eq!(
+            money_from_str("-0.50", &RUB).unwrap(),
+            "минус ноль рублей пятьдесят копеек"
+        );
+        assert_eq!(
+            money_from_str("-0.01", &RUB).unwrap(),
+            "минус ноль рублей одна копейка"
+        );
+        assert_eq!(
+            money_from_str("-5", &USD).unwrap(),
+            "минус пять долларов ноль центов"
+        );
     }
 
     #[test]

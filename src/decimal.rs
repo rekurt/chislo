@@ -1,9 +1,5 @@
 #[cfg(not(feature = "std"))]
-use alloc::{
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{format, string::String, vec::Vec};
 
 use crate::convert::convert_int_to_words;
 use crate::decline::get_declension;
@@ -11,27 +7,60 @@ use crate::dictionary::FRACTION_UNITS;
 use crate::{Error, Gender};
 
 pub(crate) fn decimal_str_to_words(decimal_str: &str) -> Result<String, Error> {
-    let parts: Vec<&str> = decimal_str.splitn(2, '.').collect();
+    let (negative, rest) = strip_sign(decimal_str);
+    let parts: Vec<&str> = rest.splitn(2, '.').collect();
 
     let whole_str = parts[0];
-    let whole: i64 = whole_str
+    let whole_abs: i64 = whole_str
         .parse()
         .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
+    let whole = if negative { -whole_abs } else { whole_abs };
+    let negative_zero = negative && whole_abs == 0;
 
     let frac_str = if parts.len() > 1 { parts[1] } else { "00" };
     let hundredths = parse_hundredths(frac_str)?;
-    Ok(format_decimal_words(whole, hundredths))
+    let units = &FRACTION_UNITS[1];
+    Ok(format_decimal_words(
+        whole,
+        hundredths,
+        units,
+        negative_zero,
+    ))
 }
 
 #[cfg(feature = "decimal")]
 pub(crate) fn decimal_value_to_words_impl(d: rust_decimal::Decimal) -> Result<String, Error> {
+    decimal_value_to_words_precision_impl(d, 2)
+}
+
+#[cfg(feature = "decimal")]
+pub(crate) fn decimal_value_to_words_precision_impl(
+    d: rust_decimal::Decimal,
+    precision: u32,
+) -> Result<String, Error> {
+    if precision == 0 || precision > 9 {
+        return Err(Error::InvalidNumber(format!(
+            "precision must be 1-9, got {precision}"
+        )));
+    }
     use rust_decimal::prelude::ToPrimitive;
 
-    let whole = d.trunc().to_i64().ok_or(Error::NumberTooLarge)?;
-    let fractional = (d - d.trunc()).abs();
-    let hundredths_dec = (fractional * rust_decimal::Decimal::from(100)).trunc();
-    let hundredths = hundredths_dec.to_i64().ok_or(Error::NumberTooLarge)? as u32;
-    Ok(format_decimal_words(whole, hundredths))
+    let negative = d.is_sign_negative();
+    let abs = d.abs();
+    let whole_abs = abs.trunc().to_i64().ok_or(Error::NumberTooLarge)?;
+    let whole = if negative { -whole_abs } else { whole_abs };
+
+    let multiplier = rust_decimal::Decimal::from(10u64.pow(precision));
+    let frac_dec = ((abs - abs.trunc()) * multiplier).trunc();
+    let frac = frac_dec.to_u64().ok_or(Error::NumberTooLarge)? as u32;
+
+    let units = &FRACTION_UNITS[precision as usize - 1];
+    Ok(format_decimal_words(
+        whole,
+        frac,
+        units,
+        negative && whole_abs == 0,
+    ))
 }
 
 pub(crate) fn decimal_str_to_words_precision(
@@ -44,23 +73,33 @@ pub(crate) fn decimal_str_to_words_precision(
         )));
     }
 
-    let parts: Vec<&str> = decimal_str.splitn(2, '.').collect();
+    let (negative, rest) = strip_sign(decimal_str);
+    let parts: Vec<&str> = rest.splitn(2, '.').collect();
 
     let whole_str = parts[0];
-    let whole: i64 = whole_str
+    let whole_abs: i64 = whole_str
         .parse()
         .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
+    let whole = if negative { -whole_abs } else { whole_abs };
+    let negative_zero = negative && whole_abs == 0;
 
     let frac_str = if parts.len() > 1 { parts[1] } else { "" };
     let frac_value = parse_fraction(frac_str, precision)?;
 
     let units = &FRACTION_UNITS[precision as usize - 1];
+    Ok(format_decimal_words(
+        whole,
+        frac_value,
+        units,
+        negative_zero,
+    ))
+}
 
-    let whole_words = convert_int_to_words(whole, Gender::Masculine);
-    let frac_words = convert_int_to_words(frac_value as i64, Gender::Feminine);
-    let frac_decl = get_declension(frac_value as i64, units[0], units[1], units[2]);
-
-    Ok(format!("{whole_words} целых {frac_words} {frac_decl}"))
+fn strip_sign(s: &str) -> (bool, &str) {
+    match s.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, s),
+    }
 }
 
 fn parse_fraction(frac_str: &str, precision: u32) -> Result<u32, Error> {
@@ -104,17 +143,20 @@ fn parse_hundredths(frac_str: &str) -> Result<u32, Error> {
     }
 }
 
-fn format_decimal_words(whole: i64, hundredths: u32) -> String {
-    let whole_words = convert_int_to_words(whole, Gender::Masculine);
-    let hundredths_words = convert_int_to_words(hundredths as i64, Gender::Feminine);
-    let hundredths_declension = get_declension(hundredths as i64, "сотая", "сотых", "сотых");
-
-    format!("{whole_words} целых {hundredths_words} {hundredths_declension}")
+fn format_decimal_words(whole: i64, frac: u32, units: &[&str; 3], negative_zero: bool) -> String {
+    let whole_words = convert_int_to_words(whole, Gender::Feminine);
+    let whole_decl = get_declension(whole, "целая", "целых", "целых");
+    let frac_words = convert_int_to_words(frac as i64, Gender::Feminine);
+    let frac_decl = get_declension(frac as i64, units[0], units[1], units[2]);
+    let sign = if negative_zero { "минус " } else { "" };
+    format!("{sign}{whole_words} {whole_decl} {frac_words} {frac_decl}")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(not(feature = "std"))]
+    use alloc::string::ToString;
 
     #[test]
     fn test_decimal_to_words() {
@@ -145,7 +187,55 @@ mod tests {
     #[test]
     fn test_decimal_to_words_whole_feminine() {
         let result = decimal_str_to_words("1.01").unwrap();
-        assert_eq!(result, "один целых одна сотая");
+        assert_eq!(result, "одна целая одна сотая");
+    }
+
+    #[test]
+    fn test_decimal_feminine_whole() {
+        // "целая" (nominative singular) only for numbers ending in 1 (but not 11-19).
+        // Everything else uses "целых" (genitive plural, mathematical convention).
+        let cases: &[(&str, u32, &str)] = &[
+            ("1.5", 1, "одна целая пять десятых"),
+            ("2.5", 1, "две целых пять десятых"),
+            ("3.5", 1, "три целых пять десятых"),
+            ("5.5", 1, "пять целых пять десятых"),
+            ("11.5", 1, "одиннадцать целых пять десятых"),
+            ("21.5", 1, "двадцать одна целая пять десятых"),
+            ("22.5", 1, "двадцать две целых пять десятых"),
+            ("101.5", 1, "сто одна целая пять десятых"),
+            ("1001.5", 1, "одна тысяча одна целая пять десятых"),
+            // 1_000_000 ends in 0, so "целых" (not "целая"):
+            ("1000000.5", 1, "один миллион целых пять десятых"),
+            // 1_000_001 ends in 1, so "целая":
+            ("1000001.5", 1, "один миллион одна целая пять десятых"),
+        ];
+        for &(input, p, expected) in cases {
+            assert_eq!(
+                decimal_str_to_words_precision(input, p).unwrap(),
+                expected,
+                "feminine_whole(\"{input}\", {p})"
+            );
+        }
+    }
+
+    #[test]
+    fn test_decimal_negative_zero() {
+        assert_eq!(
+            decimal_str_to_words("-0.5").unwrap(),
+            "минус ноль целых пятьдесят сотых"
+        );
+        assert_eq!(
+            decimal_str_to_words("-0.01").unwrap(),
+            "минус ноль целых одна сотая"
+        );
+        assert_eq!(
+            decimal_str_to_words_precision("-0.25", 2).unwrap(),
+            "минус ноль целых двадцать пять сотых"
+        );
+        assert_eq!(
+            decimal_str_to_words_precision("-0.001", 3).unwrap(),
+            "минус ноль целых одна тысячная"
+        );
     }
 
     #[cfg(feature = "decimal")]
@@ -172,6 +262,45 @@ mod tests {
         use rust_decimal::Decimal;
         let result = decimal_value_to_words_impl(Decimal::ZERO).unwrap();
         assert_eq!(result, "ноль целых ноль сотых");
+    }
+
+    #[cfg(feature = "decimal")]
+    #[test]
+    fn test_decimal_value_to_words_precision() {
+        use rust_decimal::Decimal;
+        use std::str::FromStr;
+
+        let cases: &[(&str, u32, &str)] = &[
+            ("1.5", 1, "одна целая пять десятых"),
+            ("2.5", 1, "две целых пять десятых"),
+            ("3.14", 2, "три целых четырнадцать сотых"),
+            ("0.001", 3, "ноль целых одна тысячная"),
+            (
+                "3.14159",
+                5,
+                "три целых четырнадцать тысяч сто пятьдесят девять стотысячных",
+            ),
+            ("-1.5", 1, "минус одна целая пять десятых"),
+            ("-0.5", 1, "минус ноль целых пять десятых"),
+        ];
+        for &(input, precision, expected) in cases {
+            let d = Decimal::from_str(input).unwrap();
+            assert_eq!(
+                decimal_value_to_words_precision_impl(d, precision).unwrap(),
+                expected,
+                "decimal_value_to_words_precision({input}, {precision}) failed"
+            );
+        }
+    }
+
+    #[cfg(feature = "decimal")]
+    #[test]
+    fn test_decimal_value_to_words_precision_errors() {
+        use rust_decimal::Decimal;
+        use std::str::FromStr;
+        let d = Decimal::from_str("1.5").unwrap();
+        assert!(decimal_value_to_words_precision_impl(d, 0).is_err());
+        assert!(decimal_value_to_words_precision_impl(d, 10).is_err());
     }
 
     #[test]
@@ -277,7 +406,7 @@ mod tests {
         );
         assert_eq!(
             decimal_str_to_words("-1.01").unwrap(),
-            "минус один целых одна сотая"
+            "минус одна целая одна сотая"
         );
         // Large whole part
         assert_eq!(
@@ -298,7 +427,7 @@ mod tests {
             ("0.0", "ноль целых ноль сотых"),
             ("0.1", "ноль целых десять сотых"),
             ("99.99", "девяносто девять целых девяносто девять сотых"),
-            ("-1.01", "минус один целых одна сотая"),
+            ("-1.01", "минус одна целая одна сотая"),
         ];
         for &(input, expected) in cases {
             assert_eq!(

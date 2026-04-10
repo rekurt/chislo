@@ -113,7 +113,7 @@ fn test_decimal_precision_integration() {
     );
     assert_eq!(
         decimal_to_words_precision("1.5", 1).unwrap(),
-        "один целых пять десятых"
+        "одна целая пять десятых"
     );
 }
 
