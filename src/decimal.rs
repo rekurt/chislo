@@ -58,18 +58,26 @@ pub(crate) fn decimal_str_to_words_precision(
 
     let (negative, rest) = strip_sign(decimal_str);
     let (whole_str, frac_opt) = split_decimal(rest);
-    let whole_abs: i64 = whole_str
-        .parse()
-        .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
-    let whole = if negative { -whole_abs } else { whole_abs };
+    let whole = parse_whole_part(whole_str, negative)?;
     let frac_value = parse_fractional_digits(frac_opt.unwrap_or(""), precision)?;
 
     Ok(decimal_str_to_words_precision_for(
         whole,
         frac_value,
         precision,
-        negative && whole_abs == 0,
+        negative && whole == 0,
     ))
+}
+
+fn parse_whole_part(whole_str: &str, negative: bool) -> Result<i64, Error> {
+    let raw = if negative {
+        format!("-{whole_str}")
+    } else {
+        String::from(whole_str)
+    };
+
+    raw.parse()
+        .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{raw}'")))
 }
 
 pub(crate) fn decimal_str_to_words_precision_for(
@@ -312,6 +320,14 @@ mod tests {
         assert_eq!(
             decimal_str_to_words("-1.01").unwrap(),
             "минус одна целая одна сотая"
+        );
+    }
+
+    #[test]
+    fn test_decimal_i64_min_boundary() {
+        assert_eq!(
+            decimal_str_to_words("-9223372036854775808.01").unwrap(),
+            "минус девять квинтиллионов двести двадцать три квадриллиона триста семьдесят два триллиона тридцать шесть миллиардов восемьсот пятьдесят четыре миллиона семьсот семьдесят пять тысяч восемьсот восемь целых одна сотая"
         );
     }
 }

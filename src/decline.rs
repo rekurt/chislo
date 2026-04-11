@@ -6,7 +6,7 @@ pub fn decline(n: i64, one: &str, two: &str, five: &str) -> String {
 }
 
 pub(crate) fn get_declension<'a>(n: i64, one: &'a str, two: &'a str, five: &'a str) -> &'a str {
-    let n = (n.abs() % 100) as u64;
+    let n = ((n as i128).unsigned_abs() % 100) as u64;
 
     if (11..=19).contains(&n) {
         return five;
@@ -100,5 +100,10 @@ mod tests {
                 "decline({n})"
             );
         }
+    }
+
+    #[test]
+    fn test_decline_i64_min() {
+        assert_eq!(decline(i64::MIN, "рубль", "рубля", "рублей"), "рублей");
     }
 }

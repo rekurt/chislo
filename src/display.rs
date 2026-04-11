@@ -78,6 +78,21 @@ impl Number {
         NumberWithNoun {
             n: self.0,
             forms: (one, two, five),
+            gender: Gender::Masculine,
+        }
+    }
+
+    pub const fn with_noun_gender<'a>(
+        self,
+        one: &'a str,
+        two: &'a str,
+        five: &'a str,
+        gender: Gender,
+    ) -> NumberWithNoun<'a> {
+        NumberWithNoun {
+            n: self.0,
+            forms: (one, two, five),
+            gender,
         }
     }
 
@@ -122,11 +137,12 @@ impl fmt::Display for OrdinalNumber {
 pub struct NumberWithNoun<'a> {
     n: i64,
     forms: (&'a str, &'a str, &'a str),
+    gender: Gender,
 }
 
 impl fmt::Display for NumberWithNoun<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let words = crate::int_to_words(self.n);
+        let words = crate::int_to_words_gender(self.n, self.gender);
         let noun = crate::decline(self.n, self.forms.0, self.forms.1, self.forms.2);
         write!(f, "{words} {noun}")
     }
@@ -185,6 +201,18 @@ mod tests {
                 .with_noun("рубль", "рубля", "рублей")
                 .to_string(),
             "двадцать один рубль"
+        );
+        assert_eq!(
+            Number::new(1)
+                .with_noun_gender("копейка", "копейки", "копеек", Gender::Feminine)
+                .to_string(),
+            "одна копейка"
+        );
+        assert_eq!(
+            Number::new(1)
+                .with_noun_gender("место", "места", "мест", Gender::Neuter)
+                .to_string(),
+            "одно место"
         );
     }
 
