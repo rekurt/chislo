@@ -39,6 +39,13 @@ pub(crate) fn split_decimal(s: &str) -> (&str, Option<&str>) {
     }
 }
 
+pub(crate) fn strip_sign(s: &str) -> (bool, &str) {
+    match s.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, s),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +81,12 @@ mod tests {
         assert_eq!(split_decimal("1234"), ("1234", None));
         assert_eq!(split_decimal("1234."), ("1234", Some("")));
         assert_eq!(split_decimal("-1.5"), ("-1", Some("5")));
+    }
+
+    #[test]
+    fn test_strip_sign() {
+        assert_eq!(strip_sign("-1.5"), (true, "1.5"));
+        assert_eq!(strip_sign("-0.5"), (true, "0.5"));
+        assert_eq!(strip_sign("1.5"), (false, "1.5"));
     }
 }

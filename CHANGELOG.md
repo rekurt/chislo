@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `decimal_to_words("-1.01")` → `"минус одна целая одна сотая"`
   Затрагивает `decimal_to_words`, `decimal_to_words_precision` и
   `decimal_value_to_words`.
+- **Сохранение знака.** Минус теперь корректно сохраняется для значений в
+  диапазоне `-1 < x < 0` в `decimal_to_words`, `decimal_to_words_precision`,
+  `decimal_value_to_words`, `money_from_str`, `money_from_str_rounded` и
+  `percent_decimal_precision`.
 - `FRACTION_UNITS[1]` используется для "сотая/сотых" вместо жёстко зашитой
   строки.
 
@@ -49,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `format!`, `println!` без промежуточного `String`.
 - `core::error::Error` реализован безусловно (раньше был только под `std`),
   что позволяет использовать `?`-оператор в `no_std` приложениях.
+- `decimal_value_to_words_precision(d, precision)` — конвертация
+  `rust_decimal::Decimal` с точностью 1-9 знаков.
 - Новые примеры: `examples/percent.rs`, `examples/duration.rs`, `examples/date.rs`.
 - Criterion-бенчмарки в `benches/conversion.rs`.
 - Фаззинг-таргеты для `decimal_to_words`, `money_from_str`, `percent_decimal`.
@@ -69,6 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Унифицирован парсинг дробной части в `src/parse.rs::parse_fractional_digits`
   (раньше три почти идентичные функции в `currency.rs` и `decimal.rs`).
+- Документация уточняет фактический публичный диапазон: API принимает `i64`
+  (до квинтиллионов), хотя словарь масштабов содержит названия вплоть до `10^39`.
 - Унифицирована индексация рода: `Gender::index()` возвращает `0..=2`.
 - Магические строки `"ноль"`, `"минус"`, `"целых"` вынесены в `dictionary.rs`.
 

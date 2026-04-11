@@ -150,6 +150,8 @@ impl fmt::Display for MoneyAmount<'_> {
 mod tests {
     use super::*;
     use crate::RUB;
+    #[cfg(not(feature = "std"))]
+    use alloc::string::{String, ToString};
 
     #[test]
     fn test_number_builder_cardinals() {

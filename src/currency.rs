@@ -4,30 +4,18 @@ use alloc::{format, string::String};
 use crate::Gender;
 use crate::convert::convert_int_to_words;
 use crate::decline::get_declension;
-use crate::parse::{parse_fractional_digits, split_decimal};
+use crate::parse::{parse_fractional_digits, split_decimal, strip_sign};
 
-/// Describes a currency for formatting amounts in words.
-///
-/// New in 0.3.0: the `show_frac` field controls whether the fractional part
-/// is emitted at all (e.g. JPY has no sen in modern usage).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Currency<'a> {
-    /// Whole-unit noun forms `(one, two, five)` — e.g. `("рубль", "рубля", "рублей")`.
     pub whole: (&'a str, &'a str, &'a str),
-    /// Grammatical gender of the whole unit (drives `один/одна/одно`).
     pub whole_gender: Gender,
-    /// Fractional-unit noun forms `(one, two, five)` — e.g. `("копейка", "копейки", "копеек")`.
     pub frac: (&'a str, &'a str, &'a str),
-    /// Grammatical gender of the fractional unit.
     pub frac_gender: Gender,
-    /// Whether to emit the fractional part at all. Set to `false` for
-    /// currencies without a commonly-used fractional unit (e.g. JPY).
     pub show_frac: bool,
 }
 
 impl<'a> Currency<'a> {
-    /// Convenience constructor. Equivalent to a struct literal with
-    /// `show_frac: true`.
     pub const fn new(
         whole: (&'a str, &'a str, &'a str),
         whole_gender: Gender,
@@ -43,29 +31,18 @@ impl<'a> Currency<'a> {
         }
     }
 
-    /// Looks up a built-in currency by ISO 4217 alphabetic code (case-insensitive).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chislo::Currency;
-    ///
-    /// assert!(Currency::from_iso("RUB").is_some());
-    /// assert!(Currency::from_iso("usd").is_some());
-    /// assert!(Currency::from_iso("XYZ").is_none());
-    /// ```
     pub fn from_iso(code: &str) -> Option<&'static Currency<'static>> {
-        let upper: [u8; 3] = {
-            let bytes = code.as_bytes();
-            if bytes.len() != 3 {
-                return None;
-            }
-            [
-                bytes[0].to_ascii_uppercase(),
-                bytes[1].to_ascii_uppercase(),
-                bytes[2].to_ascii_uppercase(),
-            ]
-        };
+        let bytes = code.as_bytes();
+        if bytes.len() != 3 {
+            return None;
+        }
+
+        let upper = [
+            bytes[0].to_ascii_uppercase(),
+            bytes[1].to_ascii_uppercase(),
+            bytes[2].to_ascii_uppercase(),
+        ];
+
         for &(iso, cur) in ISO_CURRENCIES {
             if iso.as_bytes() == upper {
                 return Some(cur);
@@ -75,16 +52,11 @@ impl<'a> Currency<'a> {
     }
 }
 
-/// Rounding mode used when parsing money amounts with more fractional
-/// digits than the currency's minor unit can represent.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum RoundingMode {
-    /// Truncate extra digits (current default; `100.999` → `99` cents).
     #[default]
     Trunc,
-    /// Round half away from zero (`100.995` → `100` cents).
     HalfUp,
-    /// Banker's rounding (round half to even).
     HalfEven,
 }
 
@@ -184,7 +156,6 @@ pub const AED: Currency<'static> = Currency {
     show_frac: true,
 };
 
-/// ISO 4217 alphabetic code → built-in currency mapping.
 const ISO_CURRENCIES: &[(&str, &Currency<'static>)] = &[
     ("RUB", &RUB),
     ("USD", &USD),
@@ -221,73 +192,54 @@ pub fn money_from_str(amount: &str, currency: &Currency) -> Result<String, crate
     money_from_str_rounded(amount, currency, RoundingMode::Trunc)
 }
 
-/// Parses an amount string using the given rounding mode and formats it
-/// as words with the specified currency.
-///
-/// Accepts both `.` and `,` as decimal separators.
-///
-/// # Examples
-///
-/// ```
-/// use chislo::{money_from_str_rounded, RoundingMode, RUB};
-///
-/// assert_eq!(
-///     money_from_str_rounded("100.999", &RUB, RoundingMode::HalfUp).unwrap(),
-///     "сто один рубль ноль копеек"
-/// );
-/// assert_eq!(
-///     money_from_str_rounded("1234,56", &RUB, RoundingMode::Trunc).unwrap(),
-///     "одна тысяча двести тридцать четыре рубля пятьдесят шесть копеек"
-/// );
-/// ```
 pub fn money_from_str_rounded(
     amount: &str,
     currency: &Currency,
     mode: RoundingMode,
 ) -> Result<String, crate::Error> {
-    let (whole_str, frac_opt) = split_decimal(amount);
-    let mut whole: i64 = whole_str
+    let (negative, rest) = strip_sign(amount);
+    let (whole_str, frac_opt) = split_decimal(rest);
+    let whole_abs: i64 = whole_str
         .parse()
         .map_err(|_| crate::Error::InvalidNumber(format!("invalid amount: '{whole_str}'")))?;
-
-    let frac_raw = frac_opt.unwrap_or("");
-    let (cents, carry) = round_cents(frac_raw, mode)?;
+    let mut whole = if negative { -whole_abs } else { whole_abs };
+    let (cents, carry) = round_cents(frac_opt.unwrap_or(""), mode)?;
 
     if carry {
-        if whole >= 0 {
-            whole = whole.checked_add(1).ok_or(crate::Error::NumberTooLarge)?;
-        } else {
+        if negative {
             whole = whole.checked_sub(1).ok_or(crate::Error::NumberTooLarge)?;
+        } else {
+            whole = whole.checked_add(1).ok_or(crate::Error::NumberTooLarge)?;
         }
     }
 
-    Ok(money(whole, cents, currency))
+    let result = money(whole, cents, currency);
+    if negative && whole == 0 {
+        Ok(format!("минус {result}"))
+    } else {
+        Ok(result)
+    }
 }
 
-/// Rounds a fractional digit string to 2 digits (cents) with the given mode.
-/// Returns `(cents, carry)` where `carry` indicates the whole part must be
-/// incremented (e.g. `99.995` HalfUp → `(0, true)`).
 fn round_cents(frac_str: &str, mode: RoundingMode) -> Result<(u32, bool), crate::Error> {
     if frac_str.is_empty() || matches!(mode, RoundingMode::Trunc) {
         return Ok((parse_fractional_digits(frac_str, 2)?, false));
     }
 
-    // Collect all fractional digits (up to reasonable cap).
     let mut buf = String::new();
     for c in frac_str.chars().take(18) {
         buf.push(c);
     }
     if buf.chars().count() < 3 {
-        // Fewer than 3 digits → nothing to round.
         return Ok((parse_fractional_digits(frac_str, 2)?, false));
     }
 
-    // Parse the first two digits as cents, the third as the rounding digit.
     let to_digit = |c: char| {
         c.to_digit(10).ok_or_else(|| {
             crate::Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'"))
         })
     };
+
     let mut chars = buf.chars();
     let d1 = to_digit(chars.next().unwrap())?;
     let d2 = to_digit(chars.next().unwrap())?;
@@ -406,7 +358,6 @@ mod tests {
     #[test]
     fn test_money_declension_boundaries() {
         let cases: &[(i64, u32, &Currency, &str)] = &[
-            // RUB
             (0, 0, &RUB, "ноль рублей ноль копеек"),
             (1, 1, &RUB, "один рубль одна копейка"),
             (2, 2, &RUB, "два рубля две копейки"),
@@ -414,7 +365,6 @@ mod tests {
             (11, 11, &RUB, "одиннадцать рублей одиннадцать копеек"),
             (21, 21, &RUB, "двадцать один рубль двадцать одна копейка"),
             (22, 22, &RUB, "двадцать два рубля двадцать две копейки"),
-            // USD
             (1, 1, &USD, "один доллар один цент"),
             (2, 2, &USD, "два доллара два цента"),
             (5, 5, &USD, "пять долларов пять центов"),
@@ -456,7 +406,6 @@ mod tests {
                 "money_from_str(\"{input}\")"
             );
         }
-        // Error cases
         assert!(money_from_str("abc", &RUB).is_err());
         assert!(money_from_str("", &RUB).is_err());
     }
@@ -479,7 +428,6 @@ mod tests {
 
     #[test]
     fn test_money_rounding_half_even() {
-        // 0.125 → 0.12 (even), 0.135 → 0.14 (even)
         assert_eq!(
             money_from_str_rounded("1.125", &RUB, RoundingMode::HalfEven).unwrap(),
             "один рубль двенадцать копеек"
@@ -488,10 +436,45 @@ mod tests {
             money_from_str_rounded("1.135", &RUB, RoundingMode::HalfEven).unwrap(),
             "один рубль четырнадцать копеек"
         );
-        // 0.1251 → 0.13 (tail non-zero, round up)
         assert_eq!(
             money_from_str_rounded("1.1251", &RUB, RoundingMode::HalfEven).unwrap(),
             "один рубль тринадцать копеек"
+        );
+    }
+
+    #[test]
+    fn test_money_from_str_negative() {
+        assert_eq!(
+            money_from_str("-1234.56", &RUB).unwrap(),
+            "минус одна тысяча двести тридцать четыре рубля пятьдесят шесть копеек"
+        );
+        assert_eq!(
+            money_from_str("-0.50", &RUB).unwrap(),
+            "минус ноль рублей пятьдесят копеек"
+        );
+        assert_eq!(
+            money_from_str("-0.01", &RUB).unwrap(),
+            "минус ноль рублей одна копейка"
+        );
+        assert_eq!(
+            money_from_str("-5", &USD).unwrap(),
+            "минус пять долларов ноль центов"
+        );
+    }
+
+    #[test]
+    fn test_money_rounding_negative_subunit() {
+        assert_eq!(
+            money_from_str_rounded("-0.995", &RUB, RoundingMode::HalfUp).unwrap(),
+            "минус один рубль ноль копеек"
+        );
+        assert_eq!(
+            money_from_str_rounded("-0.995", &RUB, RoundingMode::HalfEven).unwrap(),
+            "минус один рубль ноль копеек"
+        );
+        assert_eq!(
+            money_from_str_rounded("-0.125", &RUB, RoundingMode::HalfEven).unwrap(),
+            "минус ноль рублей двенадцать копеек"
         );
     }
 

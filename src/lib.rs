@@ -7,7 +7,7 @@
 //!
 //! ## Features
 //!
-//! - Numbers up to duodecillions (10^39)
+//! - Integers up to `i64::MAX` (≈ 9.22 × 10^18); scale dictionary includes names up to 10^39
 //! - Three grammatical genders: masculine, feminine, neuter
 //! - Automatic Russian noun declension
 //! - Ordinal numbers ("первый", "сорок второй")
@@ -194,7 +194,7 @@ pub fn decimal_to_words_precision(decimal_str: &str, precision: u32) -> Result<S
     decimal::decimal_str_to_words_precision(decimal_str, precision)
 }
 
-/// Converts a `rust_decimal::Decimal` value to Russian words.
+/// Converts a `rust_decimal::Decimal` value to Russian words (2 decimal places).
 ///
 /// # Examples
 ///
@@ -212,6 +212,29 @@ pub fn decimal_to_words_precision(decimal_str: &str, precision: u32) -> Result<S
 #[cfg(feature = "decimal")]
 pub fn decimal_value_to_words(d: rust_decimal::Decimal) -> Result<String, Error> {
     decimal::decimal_value_to_words_impl(d)
+}
+
+/// Converts a `rust_decimal::Decimal` value with the specified precision (1-9).
+///
+/// # Examples
+///
+/// ```
+/// use chislo::decimal_value_to_words_precision;
+/// use rust_decimal::Decimal;
+/// use std::str::FromStr;
+///
+/// let d = Decimal::from_str("3.14159").unwrap();
+/// assert_eq!(
+///     decimal_value_to_words_precision(d, 5).unwrap(),
+///     "три целых четырнадцать тысяч сто пятьдесят девять стотысячных"
+/// );
+/// ```
+#[cfg(feature = "decimal")]
+pub fn decimal_value_to_words_precision(
+    d: rust_decimal::Decimal,
+    precision: u32,
+) -> Result<String, Error> {
+    decimal::decimal_value_to_words_precision_impl(d, precision)
 }
 
 /// Returns the correct Russian noun declension form based on a number.

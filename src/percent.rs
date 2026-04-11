@@ -8,7 +8,7 @@ use alloc::{
 
 use crate::convert::convert_int_to_words;
 use crate::decline::get_declension;
-use crate::parse::{parse_fractional_digits, split_decimal};
+use crate::parse::{parse_fractional_digits, split_decimal, strip_sign};
 use crate::{Error, Gender};
 
 const PERCENT_ONE: &str = "процент";
@@ -64,21 +64,39 @@ pub fn percent_decimal_precision(s: &str, precision: u32) -> Result<String, Erro
         )));
     }
 
-    let (whole_str, frac_opt) = split_decimal(s);
-    let whole: i64 = whole_str
+    let (negative, rest) = strip_sign(s);
+    let (whole_str, frac_opt) = split_decimal(rest);
+    let whole_abs: i64 = whole_str
         .parse()
         .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
+    let whole = if negative { -whole_abs } else { whole_abs };
+    let negative_zero = negative && whole_abs == 0;
 
     match frac_opt {
-        None => Ok(percent(whole)),
+        None => {
+            let result = percent(whole);
+            if negative_zero {
+                Ok(format!("минус {result}"))
+            } else {
+                Ok(result)
+            }
+        }
         Some(frac_str) => {
             let frac_value = parse_fractional_digits(frac_str, precision)?;
             if frac_value == 0 {
-                return Ok(percent(whole));
+                let result = percent(whole);
+                return if negative_zero {
+                    Ok(format!("минус {result}"))
+                } else {
+                    Ok(result)
+                };
             }
-            // When a fraction is present the unit is always "процента".
-            let decimal =
-                crate::decimal::decimal_str_to_words_precision_for(whole, frac_value, precision);
+            let decimal = crate::decimal::decimal_str_to_words_precision_for(
+                whole,
+                frac_value,
+                precision,
+                negative_zero,
+            );
             Ok(format!("{decimal} {PERCENT_TWO}"))
         }
     }
@@ -147,6 +165,10 @@ mod tests {
         assert_eq!(
             percent_decimal_precision("3.14159", 5).unwrap(),
             "три целых четырнадцать тысяч сто пятьдесят девять стотысячных процента"
+        );
+        assert_eq!(
+            percent_decimal_precision("-0.5", 1).unwrap(),
+            "минус ноль целых пять десятых процента"
         );
     }
 
