@@ -66,11 +66,13 @@ pub fn percent_decimal_precision(s: &str, precision: u32) -> Result<String, Erro
 
     let (negative, rest) = strip_sign(s);
     let (whole_str, frac_opt) = split_decimal(rest);
-    let whole_abs: i64 = whole_str
-        .parse()
-        .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
-    let whole = if negative { -whole_abs } else { whole_abs };
-    let negative_zero = negative && whole_abs == 0;
+    let whole: i64 = if negative {
+        format!("-{whole_str}").parse()
+    } else {
+        whole_str.parse()
+    }
+    .map_err(|_| Error::InvalidNumber(format!("invalid whole part: '{whole_str}'")))?;
+    let negative_zero = negative && whole == 0;
 
     match frac_opt {
         None => {
@@ -184,6 +186,11 @@ mod tests {
         assert!(percent_decimal("abc").is_err());
         assert!(percent_decimal_precision("1.5", 0).is_err());
         assert!(percent_decimal_precision("1.5", 10).is_err());
+    }
+
+    #[test]
+    fn test_percent_decimal_i64_min_boundary() {
+        assert!(percent_decimal_precision("-9223372036854775808.5", 1).is_ok());
     }
 
     #[test]
