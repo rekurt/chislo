@@ -30,8 +30,7 @@ pub(crate) fn decimal_value_to_words_precision_impl(
 
     let negative = d.is_sign_negative();
     let abs = d.abs();
-    let whole_abs = abs.trunc().to_i64().ok_or(Error::NumberTooLarge)?;
-    let whole = if negative { -whole_abs } else { whole_abs };
+    let whole = d.trunc().to_i64().ok_or(Error::NumberTooLarge)?;
     let multiplier = rust_decimal::Decimal::from(10u64.pow(precision));
     let frac = ((abs - abs.trunc()) * multiplier)
         .trunc()
@@ -42,7 +41,7 @@ pub(crate) fn decimal_value_to_words_precision_impl(
         whole,
         frac,
         precision,
-        negative && whole_abs == 0,
+        negative && whole == 0,
     ))
 }
 
@@ -329,5 +328,13 @@ mod tests {
             decimal_str_to_words("-9223372036854775808.01").unwrap(),
             "минус девять квинтиллионов двести двадцать три квадриллиона триста семьдесят два триллиона тридцать шесть миллиардов восемьсот пятьдесят четыре миллиона семьсот семьдесят пять тысяч восемьсот восемь целых одна сотая"
         );
+    }
+
+    #[cfg(feature = "decimal")]
+    #[test]
+    fn test_decimal_value_i64_min_boundary() {
+        use rust_decimal::Decimal;
+        let d = Decimal::from(i64::MIN) + Decimal::new(1, 2);
+        assert!(super::decimal_value_to_words_precision_impl(d, 2).is_ok());
     }
 }

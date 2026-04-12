@@ -199,10 +199,12 @@ pub fn money_from_str_rounded(
 ) -> Result<String, crate::Error> {
     let (negative, rest) = strip_sign(amount);
     let (whole_str, frac_opt) = split_decimal(rest);
-    let whole_abs: i64 = whole_str
-        .parse()
-        .map_err(|_| crate::Error::InvalidNumber(format!("invalid amount: '{whole_str}'")))?;
-    let mut whole = if negative { -whole_abs } else { whole_abs };
+    let mut whole: i64 = if negative {
+        format!("-{whole_str}").parse()
+    } else {
+        whole_str.parse()
+    }
+    .map_err(|_| crate::Error::InvalidNumber(format!("invalid amount: '{whole_str}'")))?;
     let (cents, carry) = round_cents(frac_opt.unwrap_or(""), mode)?;
 
     if carry {
@@ -475,6 +477,15 @@ mod tests {
         assert_eq!(
             money_from_str_rounded("-0.125", &RUB, RoundingMode::HalfEven).unwrap(),
             "минус ноль рублей двенадцать копеек"
+        );
+    }
+
+    #[test]
+    fn test_money_from_str_i64_min_boundary() {
+        assert!(money_from_str("-9223372036854775808.01", &RUB).is_ok());
+        assert_eq!(
+            money_from_str("-9223372036854775808.01", &RUB).unwrap(),
+            "минус девять квинтиллионов двести двадцать три квадриллиона триста семьдесят два триллиона тридцать шесть миллиардов восемьсот пятьдесят четыре миллиона семьсот семьдесят пять тысяч восемьсот восемь рублей одна копейка"
         );
     }
 
