@@ -246,7 +246,13 @@ fn round_cents(frac_str: &str, mode: RoundingMode) -> Result<(u32, bool), crate:
     let d1 = to_digit(chars.next().unwrap())?;
     let d2 = to_digit(chars.next().unwrap())?;
     let d3 = to_digit(chars.next().unwrap())?;
-    let tail_nonzero = chars.any(|c| c != '0');
+    let mut tail_nonzero = false;
+    for c in chars {
+        to_digit(c)?;
+        if c != '0' {
+            tail_nonzero = true;
+        }
+    }
     let mut cents = d1 * 10 + d2;
 
     let round_up = match mode {
@@ -410,6 +416,10 @@ mod tests {
         }
         assert!(money_from_str("abc", &RUB).is_err());
         assert!(money_from_str("", &RUB).is_err());
+        assert!(
+            money_from_str_rounded("1.125x", &RUB, RoundingMode::HalfUp).is_err(),
+            "non-digit characters in fractional tail must be rejected"
+        );
     }
 
     #[test]
