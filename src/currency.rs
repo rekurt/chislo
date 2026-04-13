@@ -455,12 +455,7 @@ mod tests {
         );
         // non-zero digit beyond 18th position must still break the tie
         assert_eq!(
-            money_from_str_rounded(
-                "1.1250000000000000001",
-                &RUB,
-                RoundingMode::HalfEven
-            )
-            .unwrap(),
+            money_from_str_rounded("1.1250000000000000001", &RUB, RoundingMode::HalfEven).unwrap(),
             "один рубль тринадцать копеек"
         );
     }
