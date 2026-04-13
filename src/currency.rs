@@ -228,24 +228,25 @@ fn round_cents(frac_str: &str, mode: RoundingMode) -> Result<(u32, bool), crate:
         return Ok((parse_fractional_digits(frac_str, 2)?, false));
     }
 
-    let mut buf = String::new();
-    for c in frac_str.chars().take(18) {
-        buf.push(c);
-    }
-    if buf.chars().count() < 3 {
-        return Ok((parse_fractional_digits(frac_str, 2)?, false));
-    }
-
     let to_digit = |c: char| {
         c.to_digit(10).ok_or_else(|| {
             crate::Error::InvalidNumber(format!("invalid fractional part: '{frac_str}'"))
         })
     };
 
-    let mut chars = buf.chars();
-    let d1 = to_digit(chars.next().unwrap())?;
-    let d2 = to_digit(chars.next().unwrap())?;
-    let d3 = to_digit(chars.next().unwrap())?;
+    let mut chars = frac_str.chars();
+    let d1 = match chars.next() {
+        Some(c) => to_digit(c)?,
+        None => return Ok((parse_fractional_digits(frac_str, 2)?, false)),
+    };
+    let d2 = match chars.next() {
+        Some(c) => to_digit(c)?,
+        None => return Ok((parse_fractional_digits(frac_str, 2)?, false)),
+    };
+    let d3 = match chars.next() {
+        Some(c) => to_digit(c)?,
+        None => return Ok((parse_fractional_digits(frac_str, 2)?, false)),
+    };
     let mut tail_nonzero = false;
     for c in chars {
         to_digit(c)?;
@@ -450,6 +451,16 @@ mod tests {
         );
         assert_eq!(
             money_from_str_rounded("1.1251", &RUB, RoundingMode::HalfEven).unwrap(),
+            "один рубль тринадцать копеек"
+        );
+        // non-zero digit beyond 18th position must still break the tie
+        assert_eq!(
+            money_from_str_rounded(
+                "1.1250000000000000001",
+                &RUB,
+                RoundingMode::HalfEven
+            )
+            .unwrap(),
             "один рубль тринадцать копеек"
         );
     }
