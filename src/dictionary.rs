@@ -1,16 +1,29 @@
 //! Word lookup tables for Russian number words.
 
-/// ones[digit-1][gender]: digit 1-9, gender index 0=unused, 1=masculine, 2=feminine, 3=neuter
-pub(crate) const ONES: [[&str; 4]; 9] = [
-    ["", "один", "одна", "одно"],
-    ["", "два", "две", "два"],
-    ["три", "три", "три", "три"],
-    ["четыре", "четыре", "четыре", "четыре"],
-    ["пять", "пять", "пять", "пять"],
-    ["шесть", "шесть", "шесть", "шесть"],
-    ["семь", "семь", "семь", "семь"],
-    ["восемь", "восемь", "восемь", "восемь"],
-    ["девять", "девять", "девять", "девять"],
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
+// --- Magic strings ---
+
+pub(crate) const ZERO: &str = "ноль";
+pub(crate) const MINUS: &str = "минус";
+/// Declension forms for the word "целая" (whole part of a decimal), used as
+/// `(one, two, five)` with `get_declension`: 1 → "целая", 2–4/5+/11–19 → "целых".
+pub(crate) const WHOLE_FORMS: (&str, &str, &str) = ("целая", "целых", "целых");
+/// Ordinal form for "нулевой" in [masculine, feminine, neuter].
+pub(crate) const ZERO_ORDINAL: [&str; 3] = ["нулевой", "нулевая", "нулевое"];
+
+/// ones[digit-1][gender]: digit 1-9, gender index 0=masculine, 1=feminine, 2=neuter
+pub(crate) const ONES: [[&str; 3]; 9] = [
+    ["один", "одна", "одно"],
+    ["два", "две", "два"],
+    ["три", "три", "три"],
+    ["четыре", "четыре", "четыре"],
+    ["пять", "пять", "пять"],
+    ["шесть", "шесть", "шесть"],
+    ["семь", "семь", "семь"],
+    ["восемь", "восемь", "восемь"],
+    ["девять", "девять", "девять"],
 ];
 
 pub(crate) const TENS: [&str; 10] = [
@@ -153,6 +166,145 @@ pub(crate) const ONES_COMPOUND: [&str; 9] = [
     "девяти",
 ];
 
+/// Compound prefixes for teens 10-19 (десятитысячный, одиннадцатитысячный, etc.)
+pub(crate) const TEENS_COMPOUND: [&str; 10] = [
+    "десяти",
+    "одиннадцати",
+    "двенадцати",
+    "тринадцати",
+    "четырнадцати",
+    "пятнадцати",
+    "шестнадцати",
+    "семнадцати",
+    "восемнадцати",
+    "девятнадцати",
+];
+
+/// Compound prefixes for round tens 20-90 (двадцатитысячный, etc.)
+pub(crate) const TENS_COMPOUND: [&str; 8] = [
+    "двадцати",
+    "тридцати",
+    "сорока",
+    "пятидесяти",
+    "шестидесяти",
+    "семидесяти",
+    "восьмидесяти",
+    "девяносто",
+];
+
+/// Compound prefixes for round hundreds 100-900 (стотысячный, etc.)
+pub(crate) const HUNDREDS_COMPOUND: [&str; 9] = [
+    "сто",
+    "двухсот",
+    "трёхсот",
+    "четырёхсот",
+    "пятисот",
+    "шестисот",
+    "семисот",
+    "восьмисот",
+    "девятисот",
+];
+
+// --- Genitive ordinal tables (masculine / neuter share the ‑ого form) ---
+// Used by datetime module for year formatting ("две тысячи двадцать шестого года").
+
+pub(crate) const ORDINAL_ONES_GEN_M: [&str; 9] = [
+    "первого",
+    "второго",
+    "третьего",
+    "четвёртого",
+    "пятого",
+    "шестого",
+    "седьмого",
+    "восьмого",
+    "девятого",
+];
+
+pub(crate) const ORDINAL_TEENS_GEN_M: [&str; 10] = [
+    "десятого",
+    "одиннадцатого",
+    "двенадцатого",
+    "тринадцатого",
+    "четырнадцатого",
+    "пятнадцатого",
+    "шестнадцатого",
+    "семнадцатого",
+    "восемнадцатого",
+    "девятнадцатого",
+];
+
+pub(crate) const ORDINAL_TENS_GEN_M: [&str; 8] = [
+    "двадцатого",
+    "тридцатого",
+    "сорокового",
+    "пятидесятого",
+    "шестидесятого",
+    "семидесятого",
+    "восьмидесятого",
+    "девяностого",
+];
+
+pub(crate) const ORDINAL_HUNDREDS_GEN_M: [&str; 9] = [
+    "сотого",
+    "двухсотого",
+    "трёхсотого",
+    "четырёхсотого",
+    "пятисотого",
+    "шестисотого",
+    "семисотого",
+    "восьмисотого",
+    "девятисотого",
+];
+
+pub(crate) const ORDINAL_ORDERS_GEN_M: [&str; 14] = [
+    "",
+    "тысячного",
+    "миллионного",
+    "миллиардного",
+    "триллионного",
+    "квадриллионного",
+    "квинтиллионного",
+    "секстиллионного",
+    "септиллионного",
+    "октиллионного",
+    "нониллионного",
+    "дециллионного",
+    "ундециллионного",
+    "дуодециллионного",
+];
+
+/// Month names in the genitive case for date formatting.
+pub(crate) const MONTHS_GENITIVE: [&str; 12] = [
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+];
+
+/// Month names in the nominative case.
+pub(crate) const MONTHS_NOMINATIVE: [&str; 12] = [
+    "январь",
+    "февраль",
+    "март",
+    "апрель",
+    "май",
+    "июнь",
+    "июль",
+    "август",
+    "сентябрь",
+    "октябрь",
+    "ноябрь",
+    "декабрь",
+];
+
 // --- Fraction unit tables for decimal precision ---
 
 /// Fraction unit declension forms by precision (1-9): [one, two, five]
@@ -167,3 +319,39 @@ pub(crate) const FRACTION_UNITS: [[&str; 3]; 9] = [
     ["стомиллионная", "стомиллионных", "стомиллионных"],
     ["миллиардная", "миллиардных", "миллиардных"],
 ];
+
+/// Builds a compound prefix for numbers 1-999 used in compound ordinals
+/// (e.g. 12 → "двенадцати", 25 → "двадцатипяти", 200 → "двухсот").
+///
+/// Returns `None` if `n` is 0 or > 999.
+pub(crate) fn compound_prefix(n: u64) -> Option<String> {
+    if n == 0 || n > 999 {
+        return None;
+    }
+
+    let h = (n / 100) as usize;
+    let rest = (n % 100) as usize;
+    let t = rest / 10;
+    let o = rest % 10;
+
+    let mut prefix = String::new();
+
+    if h > 0 {
+        prefix.push_str(HUNDREDS_COMPOUND[h - 1]);
+    }
+
+    if rest == 0 {
+        // exact hundreds, prefix is complete
+    } else if (10..=19).contains(&rest) {
+        prefix.push_str(TEENS_COMPOUND[rest - 10]);
+    } else {
+        if t >= 2 {
+            prefix.push_str(TENS_COMPOUND[t - 2]);
+        }
+        if o > 0 {
+            prefix.push_str(ONES_COMPOUND[o - 1]);
+        }
+    }
+
+    Some(prefix)
+}

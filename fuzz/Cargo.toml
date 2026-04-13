@@ -1,0 +1,30 @@
+[package]
+name = "chislo-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+chislo = { path = ".." }
+
+[[bin]]
+name = "decimal"
+path = "fuzz_targets/decimal.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "money"
+path = "fuzz_targets/money.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "percent"
+path = "fuzz_targets/percent.rs"
+test = false
+doc = false

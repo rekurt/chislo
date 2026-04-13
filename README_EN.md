@@ -16,18 +16,26 @@ Rust port of [go-propisyu](https://github.com/rekurt/go-propisyu).
 
 ## Features
 
-- Numbers up to duodecillions (10^39)
+- Integers in the `i64` range (≈ 9.22 × 10^18, quintillions); scale dictionary goes up to duodecillions (10^39)
 - Three grammatical genders: masculine, feminine, neuter
 - Automatic noun declension by number
 - Ordinal numbers ("первый", "сорок второй", "двухтысячный")
-- Currency formatting: RUB, USD, EUR and custom currencies
-- Decimal numbers (strings and `rust_decimal::Decimal`)
+- **Decimals with correct grammar** ("одна целая пять десятых", not "один целых")
+- **Percentages**: `percent`, `percent_decimal` ("forty-two percent" → "сорок два процента")
+- **Durations**: `duration_hms`, `duration_from_secs`
+- **Dates & times in words**: `date_to_words`, `time_to_words`, `year_to_words`
+- **Common fractions**: `fraction`, `mixed_fraction`
+- 11 built-in currencies: RUB, USD, EUR, GBP, CNY, JPY, KZT, BYN, UAH, CHF, AED
+- ISO 4217 currency lookup (`Currency::from_iso("USD")`)
+- Rounding modes (`Trunc`, `HalfUp`, `HalfEven`) for money parsing
+- Both `.` and `,` accepted as decimal separators
+- Fluent `Display` wrappers (`Number::new(42).feminine()`) — zero-alloc formatting
+- Decimals (strings and `rust_decimal::Decimal`)
 - Configurable decimal precision (1-9 places)
 - Negative numbers
-- Zero external dependencies for integer functions
 - Optional `rust_decimal` support via feature flag
 - Zero-copy dictionary — all data in `const`, no allocations
-- `no_std` support (with `alloc`)
+- `no_std` support (with `alloc`); `Error` implements `core::error::Error`
 - WASM bindings via `wasm-bindgen`
 
 ## Installation
@@ -36,15 +44,30 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chislo = "0.2"
+chislo = "0.3"
 ```
 
 Without `rust_decimal` support:
 
 ```toml
 [dependencies]
-chislo = { version = "0.2", default-features = false }
+chislo = { version = "0.3", default-features = false }
 ```
+
+## Breaking change in 0.3.0
+
+The whole part of a decimal number is now rendered in feminine gender (as it
+agrees with the implicit word "целая"). This was grammatically wrong in earlier
+versions:
+
+```text
+before 0.3.0:  decimal_to_words("1.01") → "один целых одна сотая"
+since  0.3.0:  decimal_to_words("1.01") → "одна целая одна сотая"
+since  0.3.0:  decimal_to_words("2.5")  → "две целых пятьдесят сотых"
+```
+
+Only output for numbers whose whole part ends in 1 or 2 (but not 11/12) is
+affected.
 
 ## Quick Start
 
