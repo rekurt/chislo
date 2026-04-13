@@ -1,5 +1,8 @@
 //! Word lookup tables for Russian number words.
 
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 // --- Magic strings ---
 
 pub(crate) const ZERO: &str = "ноль";
@@ -163,6 +166,45 @@ pub(crate) const ONES_COMPOUND: [&str; 9] = [
     "девяти",
 ];
 
+/// Compound prefixes for teens 10-19 (десятитысячный, одиннадцатитысячный, etc.)
+pub(crate) const TEENS_COMPOUND: [&str; 10] = [
+    "десяти",
+    "одиннадцати",
+    "двенадцати",
+    "тринадцати",
+    "четырнадцати",
+    "пятнадцати",
+    "шестнадцати",
+    "семнадцати",
+    "восемнадцати",
+    "девятнадцати",
+];
+
+/// Compound prefixes for round tens 20-90 (двадцатитысячный, etc.)
+pub(crate) const TENS_COMPOUND: [&str; 8] = [
+    "двадцати",
+    "тридцати",
+    "сорока",
+    "пятидесяти",
+    "шестидесяти",
+    "семидесяти",
+    "восьмидесяти",
+    "девяносто",
+];
+
+/// Compound prefixes for round hundreds 100-900 (стотысячный, etc.)
+pub(crate) const HUNDREDS_COMPOUND: [&str; 9] = [
+    "сто",
+    "двухсот",
+    "трёхсот",
+    "четырёхсот",
+    "пятисот",
+    "шестисот",
+    "семисот",
+    "восьмисот",
+    "девятисот",
+];
+
 // --- Genitive ordinal tables (masculine / neuter share the ‑ого form) ---
 // Used by datetime module for year formatting ("две тысячи двадцать шестого года").
 
@@ -277,3 +319,39 @@ pub(crate) const FRACTION_UNITS: [[&str; 3]; 9] = [
     ["стомиллионная", "стомиллионных", "стомиллионных"],
     ["миллиардная", "миллиардных", "миллиардных"],
 ];
+
+/// Builds a compound prefix for numbers 1-999 used in compound ordinals
+/// (e.g. 12 → "двенадцати", 25 → "двадцатипяти", 200 → "двухсот").
+///
+/// Returns `None` if `n` is 0 or > 999.
+pub(crate) fn compound_prefix(n: u64) -> Option<String> {
+    if n == 0 || n > 999 {
+        return None;
+    }
+
+    let h = (n / 100) as usize;
+    let rest = (n % 100) as usize;
+    let t = rest / 10;
+    let o = rest % 10;
+
+    let mut prefix = String::new();
+
+    if h > 0 {
+        prefix.push_str(HUNDREDS_COMPOUND[h - 1]);
+    }
+
+    if rest == 0 {
+        // exact hundreds, prefix is complete
+    } else if (10..=19).contains(&rest) {
+        prefix.push_str(TEENS_COMPOUND[rest - 10]);
+    } else {
+        if t >= 2 {
+            prefix.push_str(TENS_COMPOUND[t - 2]);
+        }
+        if o > 0 {
+            prefix.push_str(ONES_COMPOUND[o - 1]);
+        }
+    }
+
+    Some(prefix)
+}

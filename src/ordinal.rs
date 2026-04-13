@@ -109,13 +109,10 @@ fn ordinal_round_order(n: u64, gi: usize) -> String {
     if remaining == 1 {
         // 1000 → тысячный, 1000000 → миллионный
         ORDINAL_ORDERS[order][gi].to_string()
-    } else if remaining <= 9 {
-        // 2000 → двухтысячный
-        let prefix = ONES_COMPOUND[remaining as usize - 1];
+    } else if let Some(prefix) = compound_prefix(remaining) {
         let suffix = ORDINAL_ORDERS[order][gi];
         format!("{prefix}{suffix}")
     } else {
-        // Complex: cardinal + order ordinal (simplified)
         let cardinal = convert_int_to_words(remaining as i64, Gender::Masculine);
         let suffix = ORDINAL_ORDERS[order][gi];
         format!("{cardinal} {suffix}")
@@ -193,6 +190,14 @@ mod tests {
         assert_eq!(ordinal(5000, Gender::Masculine), "пятитысячный");
         assert_eq!(ordinal(1000000, Gender::Masculine), "миллионный");
         assert_eq!(ordinal(2000000, Gender::Masculine), "двухмиллионный");
+        assert_eq!(ordinal(10000, Gender::Masculine), "десятитысячный");
+        assert_eq!(ordinal(12000, Gender::Masculine), "двенадцатитысячный");
+        assert_eq!(ordinal(15000, Gender::Feminine), "пятнадцатитысячная");
+        assert_eq!(ordinal(20000, Gender::Masculine), "двадцатитысячный");
+        assert_eq!(ordinal(25000, Gender::Neuter), "двадцатипятитысячное");
+        assert_eq!(ordinal(100000, Gender::Masculine), "стотысячный");
+        assert_eq!(ordinal(200000, Gender::Feminine), "двухсоттысячная");
+        assert_eq!(ordinal(500000, Gender::Masculine), "пятисоттысячный");
     }
 
     #[test]

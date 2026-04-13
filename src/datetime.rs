@@ -10,8 +10,8 @@ use alloc::{
 use crate::convert::convert_int_to_words;
 use crate::decline::get_declension;
 use crate::dictionary::{
-    HUNDREDS, MONTHS_GENITIVE, MONTHS_NOMINATIVE, ONES_COMPOUND, ORDINAL_HUNDREDS_GEN_M,
-    ORDINAL_ONES_GEN_M, ORDINAL_ORDERS_GEN_M, ORDINAL_TEENS_GEN_M, ORDINAL_TENS_GEN_M, TENS,
+    HUNDREDS, MONTHS_GENITIVE, MONTHS_NOMINATIVE, ORDINAL_HUNDREDS_GEN_M, ORDINAL_ONES_GEN_M,
+    ORDINAL_ORDERS_GEN_M, ORDINAL_TEENS_GEN_M, ORDINAL_TENS_GEN_M, TENS, compound_prefix,
 };
 use crate::ordinal::ordinal;
 use crate::{Error, Gender};
@@ -206,8 +206,7 @@ fn ordinal_round_order_genitive_masculine(n: u64) -> String {
 
     if remaining == 1 {
         ORDINAL_ORDERS_GEN_M[order].to_string()
-    } else if remaining <= 9 {
-        let prefix = ONES_COMPOUND[remaining as usize - 1];
+    } else if let Some(prefix) = compound_prefix(remaining) {
         let suffix = ORDINAL_ORDERS_GEN_M[order];
         format!("{prefix}{suffix}")
     } else {
@@ -236,6 +235,14 @@ mod tests {
             (1900, "одна тысяча девятисотого"),
             (1941, "одна тысяча девятьсот сорок первого"),
             (2001, "две тысячи первого"),
+            (10000, "десятитысячного"),
+            (12000, "двенадцатитысячного"),
+            (15000, "пятнадцатитысячного"),
+            (20000, "двадцатитысячного"),
+            (25000, "двадцатипятитысячного"),
+            (100000, "стотысячного"),
+            (200000, "двухсоттысячного"),
+            (500000, "пятисоттысячного"),
         ];
         for &(y, expected) in cases {
             assert_eq!(year_to_words(y), expected, "year_to_words({y})");
