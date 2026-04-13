@@ -19,8 +19,17 @@ pub(crate) fn parse_fractional_digits(frac_str: &str, precision: u32) -> Result<
 
     let p = precision as usize;
     let mut buf = String::with_capacity(p);
-    for c in frac_str.chars().take(p) {
+    let mut chars = frac_str.chars();
+    for c in chars.by_ref().take(p) {
         buf.push(c);
+    }
+    // Validate that any remaining characters beyond precision are digits
+    for c in chars {
+        if !c.is_ascii_digit() {
+            return Err(Error::InvalidNumber(format!(
+                "invalid fractional part: '{frac_str}'"
+            )));
+        }
     }
     while buf.chars().count() < p {
         buf.push('0');
@@ -72,6 +81,9 @@ mod tests {
     fn test_parse_fractional_digits_invalid() {
         assert!(parse_fractional_digits("ab", 2).is_err());
         assert!(parse_fractional_digits("1a", 2).is_err());
+        // non-digit characters beyond precision must also be rejected
+        assert!(parse_fractional_digits("23x", 2).is_err());
+        assert!(parse_fractional_digits("123abc", 3).is_err());
     }
 
     #[test]
