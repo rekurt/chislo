@@ -1,0 +1,85 @@
+name: Pages
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the
+# run in-progress and latest queued.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-pages-${{ hashFiles('Cargo.toml') }}
+
+      - name: Build rustdoc
+        run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+
+      - name: Build WASM demo bundle
+        run: |
+          # Match wasm-bindgen-cli to the exact wasm-bindgen version we depend on,
+          # otherwise the generated JS/wasm schema versions mismatch at runtime.
+          WB_VER=$(cargo tree --features wasm -i wasm-bindgen 2>/dev/null \
+            | grep -m1 -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | tr -d v)
+          echo "wasm-bindgen version: $WB_VER"
+          cargo install wasm-bindgen-cli --version "$WB_VER"
+          # The crate is rlib-only; override the crate type just for this wasm build.
+          cargo rustc --release --target wasm32-unknown-unknown --features wasm --crate-type cdylib
+          wasm-bindgen target/wasm32-unknown-unknown/release/chislo.wasm \
+            --out-dir pkg --target web --no-typescript
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp docs/index.html _site/index.html
+          cp -r pkg _site/pkg
+          cp -r target/doc _site/api
+          # Redirect /api/ to the crate's rustdoc index.
+          printf '<!DOCTYPE html><meta http-equiv="refresh" content="0; url=chislo/index.html">\n' > _site/api/index.html
+          touch _site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

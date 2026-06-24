@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chislo — числа прописью · Russian number-to-words for Rust</title>
+<meta name="description" content="chislo is a Rust library that turns any number into correct Russian words — grammatical gender, noun declension, currency, percentages, dates and times. i64 range, no_std, WASM.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔢</text></svg>">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --card:#161b22; --border:#30363d;
+    --fg:#e6edf3; --muted:#9198a1; --accent:#f74c00; --accent2:#ffb38a;
+    --code:#1c2128; --ok:#3fb950; --link:#58a6ff;
+    --radius:14px; --max:980px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--link);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
+  .mono{font-family:ui-monospace,monospace}
+
+  /* hero */
+  header.hero{
+    text-align:center;padding:84px 20px 56px;
+    background:
+      radial-gradient(900px 380px at 50% -120px,rgba(247,76,0,.20),transparent 70%),
+      linear-gradient(180deg,#10151c,var(--bg));
+    border-bottom:1px solid var(--border);
+  }
+  .logo{font-size:60px;line-height:1}
+  h1{font-size:clamp(40px,8vw,68px);margin:.15em 0 0;letter-spacing:-.02em}
+  h1 .ru{color:var(--accent2);font-weight:600}
+  .tagline{font-size:clamp(17px,3.2vw,21px);color:var(--muted);max-width:640px;margin:14px auto 0}
+  .badges{margin:22px 0 6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .badges img{height:22px}
+  .cta{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;
+    font-weight:600;border:1px solid var(--border);background:var(--bg2);color:var(--fg);
+    transition:transform .08s ease,border-color .15s;
+  }
+  .btn:hover{text-decoration:none;border-color:var(--accent);transform:translateY(-1px)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#ff5e1a}
+
+  section{padding:56px 0}
+  section h2{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+  section .sub{color:var(--muted);margin:0 0 26px}
+
+  /* demo */
+  .demo{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .demo-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+  .demo-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .demo input,.demo select{
+    background:var(--code);border:1px solid var(--border);color:var(--fg);
+    border-radius:10px;padding:12px 14px;font-size:16px;
+  }
+  .demo input[type=text]{flex:1;min-width:200px;font-size:20px;font-variant-numeric:tabular-nums}
+  .demo input:focus,.demo select:focus{outline:none;border-color:var(--accent)}
+  .results{margin-top:18px;display:grid;gap:10px}
+  .res{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:baseline;
+       padding:12px 14px;background:var(--code);border:1px solid var(--border);border-radius:10px}
+  .res .k{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+  .res .v{font-size:18px;color:var(--fg)}
+  .res .v.err{color:var(--accent2)}
+  .nounrow{margin-top:12px}
+  .nounrow input{font-size:15px;min-width:0;width:120px}
+  .demo-note{color:var(--muted);font-size:13px;margin-top:14px}
+  .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted)}
+
+  /* features */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .feat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+  .feat .ico{font-size:24px}
+  .feat h3{margin:10px 0 6px;font-size:17px}
+  .feat p{margin:0;color:var(--muted);font-size:14.5px}
+
+  /* code */
+  pre{background:var(--code);border:1px solid var(--border);border-radius:var(--radius);
+      padding:18px 20px;overflow:auto;font-size:14px;line-height:1.55}
+  .cmt{color:#7d8590}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}
+
+  footer{border-top:1px solid var(--border);padding:36px 20px;text-align:center;color:var(--muted);font-size:14px}
+  footer a{color:var(--muted)}
+  .install{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .install code{background:var(--code);border:1px solid var(--border);padding:10px 16px;border-radius:10px;font-size:15px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="logo">🔢</div>
+  <h1>chislo · <span class="ru">числа&nbsp;прописью</span></h1>
+  <p class="tagline">Turn any number into correct <b>Russian words</b> — grammatical gender,
+     noun declension, currency, percentages and dates. A fast, dependency-light Rust crate.</p>
+  <div class="badges">
+    <a href="https://crates.io/crates/chislo"><img alt="crates.io" src="https://img.shields.io/crates/v/chislo.svg?logo=rust"></a>
+    <a href="https://docs.rs/chislo"><img alt="docs.rs" src="https://docs.rs/chislo/badge.svg"></a>
+    <a href="https://github.com/rekurt/chislo/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rekurt/chislo/actions/workflows/ci.yml/badge.svg"></a>
+    <a href="https://crates.io/crates/chislo"><img alt="downloads" src="https://img.shields.io/crates/d/chislo.svg"></a>
+    <img alt="MSRV" src="https://img.shields.io/badge/rustc-1.85%2B-orange.svg">
+    <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg">
+  </div>
+  <div class="cta">
+    <a class="btn primary" href="#demo">▶ Try it live</a>
+    <a class="btn" href="https://docs.rs/chislo">📖 API docs</a>
+    <a class="btn" href="api/chislo/index.html">🦀 rustdoc</a>
+    <a class="btn" href="https://github.com/rekurt/chislo">★ GitHub</a>
+  </div>
+  <div class="install">
+    <code class="mono">cargo add chislo</code>
+    <span class="pill">no_std · WASM · zero-alloc dictionary</span>
+  </div>
+</header>
+
+<!-- DEMO -->
+<section class="demo" id="demo">
+  <div class="wrap">
+    <h2>Live demo</h2>
+    <p class="sub">Runs entirely in your browser via the crate's own WebAssembly bindings.</p>
+    <div class="demo-box">
+      <div class="demo-row">
+        <input id="num" type="text" inputmode="decimal" value="1234" aria-label="number"
+               placeholder="Type a number, e.g. 1234 or 3.14">
+        <select id="gender" aria-label="gender">
+          <option value="masculine">мужской · masculine</option>
+          <option value="feminine">женский · feminine</option>
+          <option value="neuter">средний · neuter</option>
+        </select>
+      </div>
+      <div class="results" id="results">
+        <div class="res"><span class="k">Cardinal</span><span class="v" id="r-card">…</span></div>
+        <div class="res"><span class="k">Ordinal</span><span class="v" id="r-ord">…</span></div>
+        <div class="res"><span class="k">Decimal</span><span class="v" id="r-dec">…</span></div>
+        <div class="res"><span class="k">With noun</span><span class="v" id="r-noun">…</span></div>
+      </div>
+      <div class="demo-row nounrow">
+        <span class="pill">noun forms for declension:</span>
+        <input id="n1" type="text" value="рубль" aria-label="one">
+        <input id="n2" type="text" value="рубля" aria-label="two">
+        <input id="n5" type="text" value="рублей" aria-label="five">
+      </div>
+      <p class="demo-note" id="wasm-note">Loading WebAssembly…</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section>
+  <div class="wrap">
+    <h2>Why chislo</h2>
+    <p class="sub">Russian numerals are deceptively hard. chislo handles the grammar so you don't have to.</p>
+    <div class="grid">
+      <div class="feat"><div class="ico">⚖️</div><h3>Grammatically correct</h3>
+        <p>Three genders (<span class="mono">один / одна / одно</span>), full noun declension, and proper decimal agreement (<span class="mono">одна целая</span>, not <span class="mono">один целых</span>).</p></div>
+      <div class="feat"><div class="ico">🧾</div><h3>Built for documents</h3>
+        <p>Money, percentages, durations, dates &amp; times, and fractions — everything receipts, invoices and payment orders need.</p></div>
+      <div class="feat"><div class="ico">💱</div><h3>11 currencies</h3>
+        <p>RUB, USD, EUR, GBP, CNY, JPY, KZT, BYN, UAH, CHF, AED out of the box, plus ISO 4217 lookup and custom currencies.</p></div>
+      <div class="feat"><div class="ico">⚡</div><h3>Zero-alloc dictionary</h3>
+        <p>All data lives in <span class="mono">const</span>; fluent <span class="mono">Display</span> wrappers format straight into <span class="mono">write!</span> with no extra <span class="mono">String</span>.</p></div>
+      <div class="feat"><div class="ico">🪶</div><h3>Tiny &amp; portable</h3>
+        <p><span class="mono">no_std</span> with <span class="mono">alloc</span>, optional <span class="mono">rust_decimal</span>, and WASM bindings via <span class="mono">wasm-bindgen</span>.</p></div>
+      <div class="feat"><div class="ico">🦀</div><h3>i64 range</h3>
+        <p>Integers up to quintillions; the scale dictionary reaches 10³⁹ (duodecillions).</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE -->
+<section style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="wrap">
+    <h2>One look, and you get it</h2>
+    <p class="sub">Add the crate and start converting.</p>
+<pre><span class="kw">use</span> chislo::{<span class="fn">int_to_words</span>, <span class="fn">decline</span>, <span class="fn">ordinal</span>, <span class="fn">money</span>, <span class="fn">date_to_words</span>, Gender, RUB};
+
+<span class="fn">int_to_words</span>(<span class="str">42</span>);                          <span class="cmt">// "сорок два"</span>
+<span class="fn">decline</span>(<span class="str">5</span>, <span class="str">"рубль"</span>, <span class="str">"рубля"</span>, <span class="str">"рублей"</span>);   <span class="cmt">// "рублей"</span>
+<span class="fn">ordinal</span>(<span class="str">2026</span>, Gender::Masculine);        <span class="cmt">// "две тысячи двадцать шестой"</span>
+<span class="fn">money</span>(<span class="str">1234</span>, <span class="str">56</span>, &amp;RUB);
+<span class="cmt">// "одна тысяча двести тридцать четыре рубля пятьдесят шесть копеек"</span>
+<span class="fn">date_to_words</span>(<span class="str">2026</span>, <span class="str">4</span>, <span class="str">10</span>);                <span class="cmt">// "десятое апреля две тысячи двадцать шестого года"</span></pre>
+    <div class="cta" style="justify-content:flex-start">
+      <a class="btn primary" href="api/chislo/index.html">Browse the full rustdoc →</a>
+      <a class="btn" href="https://github.com/rekurt/chislo/tree/master/examples">More examples</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="https://crates.io/crates/chislo">crates.io</a> ·
+    <a href="https://docs.rs/chislo">docs.rs</a> ·
+    <a href="api/chislo/index.html">rustdoc</a> ·
+    <a href="https://github.com/rekurt/chislo">GitHub</a> ·
+    <a href="https://github.com/rekurt/go-propisyu">go-propisyu</a>
+  </p>
+  <p>MIT © rekurt · числа прописью на русском языке</p>
+</footer>
+
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  const note = $("wasm-note");
+  let wasm = null;
+
+  try {
+    const mod = await import("./pkg/chislo.js");
+    await mod.default();           // init()
+    wasm = mod;
+    note.innerHTML = '<span style="color:var(--ok)">●</span> WebAssembly loaded — type to convert.';
+  } catch (e) {
+    // Graceful degradation: hide the live demo if the wasm bundle is missing.
+    note.textContent = "Live demo unavailable in this build — see the code examples below.";
+    $("results").style.opacity = .5;
+    console.warn("chislo wasm not available:", e);
+  }
+
+  function setRes(id, fn) {
+    const el = $(id);
+    try { el.textContent = fn(); el.classList.remove("err"); }
+    catch (err) { el.textContent = "—"; el.classList.add("err"); }
+  }
+
+  function render() {
+    if (!wasm) return;
+    const raw = $("num").value.trim().replace(",", ".");
+    const gender = $("gender").value;
+    const isDecimal = raw.includes(".");
+    const intVal = parseInt(raw, 10);
+    const [n1, n2, n5] = [$("n1").value, $("n2").value, $("n5").value];
+
+    setRes("r-card", () => isDecimal ? "—" : wasm.intToWordsGender(BigInt(intVal), gender));
+    setRes("r-ord",  () => isDecimal ? "—" : wasm.ordinal(BigInt(intVal), gender));
+    setRes("r-dec",  () => wasm.decimalToWords(raw));
+    setRes("r-noun", () => isDecimal ? "—" : `${wasm.intToWordsGender(BigInt(intVal), gender)} ${wasm.decline(BigInt(intVal), n1, n2, n5)}`);
+  }
+
+  ["num","gender","n1","n2","n5"].forEach(id => {
+    $(id).addEventListener("input", render);
+    $(id).addEventListener("change", render);
+  });
+  render();
+</script>
+</body>
+</html>
