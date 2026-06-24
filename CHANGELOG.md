@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-06-24
+
+Documentation and metadata release — no API or behaviour changes.
+
+### Changed
+
+- Fixed `repository` and `homepage` metadata to point at the correct
+  `rekurt/chislo` repository (previously `rekurt/propisyu`).
+- Reworked the README: an English-first, concise overview in `README.md`
+  with the full Russian reference moved to `README.ru.md`.
+
+### Added
+
+- Documentation site published to GitHub Pages — a landing page with an
+  interactive in-browser WASM demo, alongside the rustdoc API reference.
+
 ## [0.3.0] - 2026-04-10
 
 ### Fixed (breaking)
