@@ -1,106 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>chislo — числа прописью · Russian number-to-words for Rust</title>
-<meta name="description" content="chislo is a Rust library that turns any number into correct Russian words — grammatical gender, noun declension, currency, percentages, dates and times. i64 range, no_std, WASM.">
+<meta name="description" content="chislo — Rust-библиотека, которая превращает число в правильные русские слова: грамматический род, склонение существительных, валюты, проценты, дроби, длительность, даты и время. Диапазон i64, no_std, WASM.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔢</text></svg>">
 <style>
   :root{
-    --bg:#0d1117; --bg2:#161b22; --card:#161b22; --border:#30363d;
-    --fg:#e6edf3; --muted:#9198a1; --accent:#f74c00; --accent2:#ffb38a;
-    --code:#1c2128; --ok:#3fb950; --link:#58a6ff;
-    --radius:14px; --max:980px;
+    --bg:#0d1117; --bg2:#11161d; --card:#161b22; --border:#272e38; --border2:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --faint:#6e7681; --accent:#f74c00; --accent2:#ffb38a;
+    --code:#0f141b; --ok:#3fb950; --link:#58a6ff;
+    --radius:12px; --radius-sm:8px; --max:1000px;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   body{
     margin:0; background:var(--bg); color:var(--fg);
     font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
   a{color:var(--link);text-decoration:none}
   a:hover{text-decoration:underline}
-  code,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
-  .wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
-  .mono{font-family:ui-monospace,monospace}
+  code,pre,.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+
+  /* top bar */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:12px 24px;border-bottom:1px solid var(--border);
+    background:rgba(13,17,23,.82);backdrop-filter:saturate(160%) blur(10px);
+  }
+  .brand{display:flex;align-items:center;gap:9px;font-weight:650;font-size:15px;letter-spacing:-.01em}
+  .brand .mark{font-size:19px}
+  .brand .ru{color:var(--accent2);font-weight:500}
+  .topnav{display:flex;align-items:center;gap:20px}
+  .topnav a{color:var(--muted);font-size:14px}
+  .topnav a:hover{color:var(--fg);text-decoration:none}
+  .lang{display:inline-flex;border:1px solid var(--border2);border-radius:999px;overflow:hidden;background:var(--code)}
+  .lang button{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    font:inherit;font-size:13px;font-weight:600;padding:5px 12px;cursor:pointer;line-height:1.4;
+    transition:color .12s,background .12s;
+  }
+  .lang button + button{border-left:1px solid var(--border2)}
+  .lang button:hover{color:var(--fg)}
+  .lang button[aria-pressed="true"]{background:var(--accent);color:#fff}
+  @media(max-width:640px){.topnav .navlink{display:none}}
 
   /* hero */
   header.hero{
-    text-align:center;padding:84px 20px 56px;
+    text-align:center;padding:76px 24px 60px;
     background:
-      radial-gradient(900px 380px at 50% -120px,rgba(247,76,0,.20),transparent 70%),
-      linear-gradient(180deg,#10151c,var(--bg));
+      radial-gradient(820px 360px at 50% -130px,rgba(247,76,0,.16),transparent 70%),
+      linear-gradient(180deg,#0f141b,var(--bg));
     border-bottom:1px solid var(--border);
   }
-  .logo{font-size:60px;line-height:1}
-  h1{font-size:clamp(40px,8vw,68px);margin:.15em 0 0;letter-spacing:-.02em}
+  .logo{font-size:54px;line-height:1}
+  h1{font-size:clamp(38px,7vw,62px);margin:.18em 0 0;letter-spacing:-.025em;font-weight:700}
   h1 .ru{color:var(--accent2);font-weight:600}
-  .tagline{font-size:clamp(17px,3.2vw,21px);color:var(--muted);max-width:640px;margin:14px auto 0}
-  .badges{margin:22px 0 6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-  .badges img{height:22px}
-  .cta{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .tagline{font-size:clamp(16px,2.6vw,20px);color:var(--muted);max-width:600px;margin:16px auto 0;line-height:1.55}
+  .badges{margin:24px 0 4px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+  .badges img{height:21px}
+  .cta{margin-top:28px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   .btn{
-    display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;
-    font-weight:600;border:1px solid var(--border);background:var(--bg2);color:var(--fg);
-    transition:transform .08s ease,border-color .15s;
+    display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--radius-sm);
+    font-weight:600;font-size:14.5px;border:1px solid var(--border2);background:var(--card);color:var(--fg);
+    transition:transform .08s ease,border-color .15s,background .15s;
   }
-  .btn:hover{text-decoration:none;border-color:var(--accent);transform:translateY(-1px)}
+  .btn:hover{text-decoration:none;border-color:var(--faint);transform:translateY(-1px)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{background:#ff5e1a}
+  .btn.primary:hover{background:#ff5e1a;border-color:#ff5e1a}
+  .install{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  .install code{background:var(--code);border:1px solid var(--border2);padding:9px 15px;border-radius:var(--radius-sm);font-size:14.5px}
+  .pill{display:inline-block;padding:3px 10px;border:1px solid var(--border2);border-radius:999px;font-size:12px;color:var(--muted)}
 
-  section{padding:56px 0}
-  section h2{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
-  section .sub{color:var(--muted);margin:0 0 26px}
+  section{padding:60px 0}
+  section h2{font-size:clamp(23px,3.4vw,29px);margin:0 0 6px;letter-spacing:-.02em;font-weight:700}
+  section .sub{color:var(--muted);margin:0 0 28px;max-width:660px}
 
   /* demo */
   .demo{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-  .demo-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
-  .demo-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  .demo input,.demo select{
-    background:var(--code);border:1px solid var(--border);color:var(--fg);
-    border-radius:10px;padding:12px 14px;font-size:16px;
+  .demo-box{background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden}
+  .tabs{display:flex;flex-wrap:wrap;gap:2px;padding:10px 10px 0;border-bottom:1px solid var(--border);background:var(--bg2)}
+  .tab{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    font:inherit;font-size:14px;font-weight:600;padding:10px 15px 12px;cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:6px 6px 0 0;
+    transition:color .12s,border-color .12s,background .12s;
   }
-  .demo input[type=text]{flex:1;min-width:200px;font-size:20px;font-variant-numeric:tabular-nums}
+  .tab:hover{color:var(--fg);background:rgba(255,255,255,.03)}
+  .tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+  .panel{display:none;padding:24px}
+  .panel.active{display:block}
+  .panel-desc{color:var(--muted);font-size:14px;margin:0 0 18px}
+
+  .field-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.grow{flex:1;min-width:180px}
+  .field label{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .demo input,.demo select{
+    background:var(--code);border:1px solid var(--border2);color:var(--fg);
+    border-radius:var(--radius-sm);padding:11px 13px;font-size:15px;font-family:inherit;
+    transition:border-color .12s;
+  }
+  .demo input{font-variant-numeric:tabular-nums}
   .demo input:focus,.demo select:focus{outline:none;border-color:var(--accent)}
-  .results{margin-top:18px;display:grid;gap:10px}
-  .res{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:baseline;
-       padding:12px 14px;background:var(--code);border:1px solid var(--border);border-radius:10px}
-  .res .k{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
-  .res .v{font-size:18px;color:var(--fg)}
+  .field.num input{width:96px}
+  .field.tiny input{width:118px}
+
+  .results{margin-top:18px;display:grid;gap:8px}
+  .res{display:grid;grid-template-columns:148px 1fr;gap:14px;align-items:baseline;
+       padding:12px 15px;background:var(--code);border:1px solid var(--border);border-radius:var(--radius-sm)}
+  .res .k{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .res .v{font-size:17px;color:var(--fg);line-height:1.45}
   .res .v.err{color:var(--accent2)}
-  .nounrow{margin-top:12px}
-  .nounrow input{font-size:15px;min-width:0;width:120px}
-  .demo-note{color:var(--muted);font-size:13px;margin-top:14px}
-  .pill{display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted)}
+  @media(max-width:560px){.res{grid-template-columns:1fr;gap:3px}}
+
+  .snippet{margin-top:18px;background:var(--code);border:1px solid var(--border);border-radius:var(--radius-sm);
+           padding:13px 16px;font-size:13px;line-height:1.6;overflow:auto;color:var(--fg)}
+  .demo-note{color:var(--muted);font-size:13px;margin:18px 0 0;display:flex;align-items:center;gap:7px}
 
   /* features */
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-  .feat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-  .feat .ico{font-size:24px}
-  .feat h3{margin:10px 0 6px;font-size:17px}
-  .feat p{margin:0;color:var(--muted);font-size:14.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+  .feat{background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:20px 22px}
+  .feat .ico{font-size:22px;line-height:1}
+  .feat h3{margin:12px 0 6px;font-size:16px;font-weight:650;letter-spacing:-.01em}
+  .feat p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
 
   /* code */
   pre{background:var(--code);border:1px solid var(--border);border-radius:var(--radius);
-      padding:18px 20px;overflow:auto;font-size:14px;line-height:1.55}
-  .cmt{color:#7d8590}
-  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}
+      padding:20px 22px;overflow:auto;font-size:13.5px;line-height:1.6}
+  .cmt{color:#6e7681}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.ty{color:#79c0ff}
 
-  footer{border-top:1px solid var(--border);padding:36px 20px;text-align:center;color:var(--muted);font-size:14px}
+  footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--muted);font-size:14px}
   footer a{color:var(--muted)}
-  .install{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:8px}
-  .install code{background:var(--code);border:1px solid var(--border);padding:10px 16px;border-radius:10px;font-size:15px}
+  footer .links{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+  .nowrap{white-space:nowrap}
 </style>
 </head>
 <body>
 
+<div class="topbar">
+  <div class="brand"><span class="mark">🔢</span> chislo <span class="ru">· числа прописью</span></div>
+  <nav class="topnav">
+    <a class="navlink" href="#demo" data-i18n="nav.demo">Песочница</a>
+    <a class="navlink" href="#features" data-i18n="nav.features">Возможности</a>
+    <a class="navlink" href="https://github.com/rekurt/chislo">GitHub</a>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+  </nav>
+</div>
+
 <header class="hero">
   <div class="logo">🔢</div>
-  <h1>chislo · <span class="ru">числа&nbsp;прописью</span></h1>
-  <p class="tagline">Turn any number into correct <b>Russian words</b> — grammatical gender,
-     noun declension, currency, percentages and dates. A fast, dependency-light Rust crate.</p>
+  <h1>chislo · <span class="ru" data-i18n="hero.title">числа&nbsp;прописью</span></h1>
+  <p class="tagline" data-i18n="hero.tagline">Превращает любое число в правильные русские слова — род, склонение существительных, валюты, проценты, дроби, длительность, даты и время. Быстрый, нетребовательный к зависимостям крейт на Rust.</p>
   <div class="badges">
     <a href="https://crates.io/crates/chislo"><img alt="crates.io" src="https://img.shields.io/crates/v/chislo.svg?logo=rust"></a>
     <a href="https://docs.rs/chislo"><img alt="docs.rs" src="https://docs.rs/chislo/badge.svg"></a>
@@ -110,67 +170,180 @@
     <img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg">
   </div>
   <div class="cta">
-    <a class="btn primary" href="#demo">▶ Try it live</a>
-    <a class="btn" href="https://docs.rs/chislo">📖 API docs</a>
-    <a class="btn" href="api/chislo/index.html">🦀 rustdoc</a>
-    <a class="btn" href="https://github.com/rekurt/chislo">★ GitHub</a>
+    <a class="btn primary" href="#demo"><span data-i18n="hero.try">▶ Попробовать вживую</span></a>
+    <a class="btn" href="https://docs.rs/chislo" data-i18n="hero.apidocs">📖 Документация API</a>
+    <a class="btn" href="api/chislo/index.html" data-i18n="hero.rustdoc">🦀 rustdoc</a>
+    <a class="btn" href="https://github.com/rekurt/chislo" data-i18n="hero.github">★ GitHub</a>
   </div>
   <div class="install">
     <code class="mono">cargo add chislo</code>
-    <span class="pill">no_std · WASM · zero-alloc dictionary</span>
+    <span class="pill" data-i18n="hero.pill">no_std · WASM · словарь без аллокаций</span>
   </div>
 </header>
 
 <!-- DEMO -->
 <section class="demo" id="demo">
   <div class="wrap">
-    <h2>Live demo</h2>
-    <p class="sub">Runs entirely in your browser via the crate's own WebAssembly bindings.</p>
+    <h2 data-i18n="demo.h2">Интерактивная песочница</h2>
+    <p class="sub" data-i18n="demo.sub">Работает целиком в браузере через собственные WebAssembly-биндинги крейта. Те же примеры, что в репозитории, — только теперь их можно потрогать.</p>
     <div class="demo-box">
-      <div class="demo-row">
-        <input id="num" type="text" inputmode="decimal" value="1234" aria-label="number"
-               placeholder="Type a number, e.g. 1234 or 3.14">
-        <select id="gender" aria-label="gender">
-          <option value="masculine">мужской · masculine</option>
-          <option value="feminine">женский · feminine</option>
-          <option value="neuter">средний · neuter</option>
-        </select>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true"  data-tab="int"      data-i18n="tab.int">Число</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="money"    data-i18n="tab.money">Деньги</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="percent"  data-i18n="tab.percent">Проценты</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="fraction" data-i18n="tab.fraction">Дроби</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="duration" data-i18n="tab.duration">Длительность</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="date"     data-i18n="tab.date">Дата и время</button>
       </div>
-      <div class="results" id="results">
-        <div class="res"><span class="k">Cardinal</span><span class="v" id="r-card">…</span></div>
-        <div class="res"><span class="k">Ordinal</span><span class="v" id="r-ord">…</span></div>
-        <div class="res"><span class="k">Decimal</span><span class="v" id="r-dec">…</span></div>
-        <div class="res"><span class="k">With noun</span><span class="v" id="r-noun">…</span></div>
+
+      <!-- INTEGER -->
+      <div class="panel active" data-panel="int" role="tabpanel">
+        <p class="panel-desc" data-i18n="int.desc">Целые и десятичные числа с грамматическим родом и склонением существительного.</p>
+        <div class="field-row">
+          <div class="field grow">
+            <label data-i18n="int.number">Число</label>
+            <input id="i-num" type="text" inputmode="decimal" value="1234" data-i18n-ph="int.ph" placeholder="например, 1234 или 3.14">
+          </div>
+          <div class="field">
+            <label data-i18n="int.gender">Род</label>
+            <select id="i-gender">
+              <option value="masculine"  data-i18n="gender.m">мужской · masculine</option>
+              <option value="feminine"   data-i18n="gender.f">женский · feminine</option>
+              <option value="neuter"     data-i18n="gender.n">средний · neuter</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field tiny"><label data-i18n="int.one">форма «1»</label><input id="i-n1" type="text" value="рубль"></div>
+          <div class="field tiny"><label data-i18n="int.two">форма «2»</label><input id="i-n2" type="text" value="рубля"></div>
+          <div class="field tiny"><label data-i18n="int.five">форма «5»</label><input id="i-n5" type="text" value="рублей"></div>
+        </div>
+        <div class="results">
+          <div class="res"><span class="k" data-i18n="int.card">Количественное</span><span class="v" id="r-card">…</span></div>
+          <div class="res"><span class="k" data-i18n="int.ord">Порядковое</span><span class="v" id="r-ord">…</span></div>
+          <div class="res"><span class="k" data-i18n="int.dec">Десятичное</span><span class="v" id="r-dec">…</span></div>
+          <div class="res"><span class="k" data-i18n="int.noun">С существительным</span><span class="v" id="r-noun">…</span></div>
+        </div>
+        <pre class="snippet"><span class="fn">int_to_words_gender</span>(n, gender);  <span class="fn">ordinal</span>(n, gender);  <span class="fn">decimal_to_words</span>(s);  <span class="fn">decline</span>(n, one, two, five);</pre>
       </div>
-      <div class="demo-row nounrow">
-        <span class="pill">noun forms for declension:</span>
-        <input id="n1" type="text" value="рубль" aria-label="one">
-        <input id="n2" type="text" value="рубля" aria-label="two">
-        <input id="n5" type="text" value="рублей" aria-label="five">
+
+      <!-- MONEY -->
+      <div class="panel" data-panel="money" role="tabpanel">
+        <p class="panel-desc" data-i18n="money.desc">Сумма прописью с правильным склонением валюты и копеек — для чеков, счетов и платёжек.</p>
+        <div class="field-row">
+          <div class="field grow">
+            <label data-i18n="money.amount">Сумма</label>
+            <input id="m-amount" type="text" inputmode="decimal" value="1234.56" placeholder="1234.56">
+          </div>
+          <div class="field">
+            <label data-i18n="money.currency">Валюта</label>
+            <select id="m-cur">
+              <option value="RUB">RUB · рубль</option>
+              <option value="USD">USD · доллар</option>
+              <option value="EUR">EUR · евро</option>
+              <option value="GBP">GBP · фунт</option>
+              <option value="CNY">CNY · юань</option>
+              <option value="JPY">JPY · иена</option>
+              <option value="KZT">KZT · тенге</option>
+              <option value="BYN">BYN · бел. рубль</option>
+              <option value="UAH">UAH · гривна</option>
+              <option value="CHF">CHF · франк</option>
+              <option value="AED">AED · дирхам</option>
+            </select>
+          </div>
+        </div>
+        <div class="results">
+          <div class="res"><span class="k" data-i18n="money.result">Прописью</span><span class="v" id="r-money">…</span></div>
+        </div>
+        <pre class="snippet"><span class="fn">money_from_str</span>(<span class="str">"1234.56"</span>, &amp;<span class="ty">RUB</span>);</pre>
       </div>
-      <p class="demo-note" id="wasm-note">Loading WebAssembly…</p>
+
+      <!-- PERCENT -->
+      <div class="panel" data-panel="percent" role="tabpanel">
+        <p class="panel-desc" data-i18n="percent.desc">Целые и дробные проценты с верным согласованием слова «процент».</p>
+        <div class="field-row">
+          <div class="field grow">
+            <label data-i18n="percent.value">Значение</label>
+            <input id="p-val" type="text" inputmode="decimal" value="42.25" placeholder="42 · 42.25">
+          </div>
+        </div>
+        <div class="results">
+          <div class="res"><span class="k" data-i18n="percent.result">Прописью</span><span class="v" id="r-pct">…</span></div>
+        </div>
+        <pre class="snippet"><span class="fn">percent</span>(<span class="str">42</span>);  <span class="fn">percent_decimal</span>(<span class="str">"42.25"</span>);</pre>
+      </div>
+
+      <!-- FRACTION -->
+      <div class="panel" data-panel="fraction" role="tabpanel">
+        <p class="panel-desc" data-i18n="fraction.desc">Простые и смешанные дроби. Оставьте целую часть равной нулю для простой дроби.</p>
+        <div class="field-row">
+          <div class="field num"><label data-i18n="fraction.whole">Целая</label><input id="f-whole" type="text" inputmode="numeric" value="0"></div>
+          <div class="field num"><label data-i18n="fraction.numer">Числитель</label><input id="f-num" type="text" inputmode="numeric" value="1"></div>
+          <div class="field num"><label data-i18n="fraction.denom">Знаменатель</label><input id="f-den" type="text" inputmode="numeric" value="2"></div>
+        </div>
+        <div class="results">
+          <div class="res"><span class="k" data-i18n="fraction.result">Прописью</span><span class="v" id="r-frac">…</span></div>
+        </div>
+        <pre class="snippet"><span class="fn">fraction</span>(<span class="str">1</span>, <span class="str">2</span>);  <span class="fn">mixed_fraction</span>(<span class="str">3</span>, <span class="str">2</span>, <span class="str">5</span>);</pre>
+      </div>
+
+      <!-- DURATION -->
+      <div class="panel" data-panel="duration" role="tabpanel">
+        <p class="panel-desc" data-i18n="duration.desc">Длительность из часов-минут-секунд или из общего числа секунд.</p>
+        <div class="field-row">
+          <div class="field num"><label data-i18n="duration.h">Часы</label><input id="d-h" type="text" inputmode="numeric" value="1"></div>
+          <div class="field num"><label data-i18n="duration.m">Минуты</label><input id="d-m" type="text" inputmode="numeric" value="30"></div>
+          <div class="field num"><label data-i18n="duration.s">Секунды</label><input id="d-s" type="text" inputmode="numeric" value="0"></div>
+          <div class="field num"><label data-i18n="duration.total">Всего секунд</label><input id="d-total" type="text" inputmode="numeric" value="3661"></div>
+        </div>
+        <div class="results">
+          <div class="res"><span class="k" data-i18n="duration.hms">Из ч:м:с</span><span class="v" id="r-dhms">…</span></div>
+          <div class="res"><span class="k" data-i18n="duration.fromsecs">Из секунд</span><span class="v" id="r-dsec">…</span></div>
+        </div>
+        <pre class="snippet"><span class="fn">duration_hms</span>(<span class="str">1</span>, <span class="str">30</span>, <span class="str">0</span>);  <span class="fn">duration_from_secs</span>(<span class="str">3_661</span>);</pre>
+      </div>
+
+      <!-- DATE -->
+      <div class="panel" data-panel="date" role="tabpanel">
+        <p class="panel-desc" data-i18n="date.desc">Дата, год и время прописью — для договоров и документов.</p>
+        <div class="field-row">
+          <div class="field num"><label data-i18n="date.year">Год</label><input id="dt-y" type="text" inputmode="numeric" value="2026"></div>
+          <div class="field num"><label data-i18n="date.month">Месяц</label><input id="dt-mo" type="text" inputmode="numeric" value="4"></div>
+          <div class="field num"><label data-i18n="date.day">День</label><input id="dt-d" type="text" inputmode="numeric" value="10"></div>
+          <div class="field num"><label data-i18n="date.hour">Час</label><input id="dt-h" type="text" inputmode="numeric" value="14"></div>
+          <div class="field num"><label data-i18n="date.min">Минута</label><input id="dt-mi" type="text" inputmode="numeric" value="30"></div>
+        </div>
+        <div class="results">
+          <div class="res"><span class="k" data-i18n="date.full">Дата</span><span class="v" id="r-date">…</span></div>
+          <div class="res"><span class="k" data-i18n="date.yearw">Год</span><span class="v" id="r-year">…</span></div>
+          <div class="res"><span class="k" data-i18n="date.timew">Время</span><span class="v" id="r-time">…</span></div>
+        </div>
+        <pre class="snippet"><span class="fn">date_to_words</span>(<span class="str">2026</span>, <span class="str">4</span>, <span class="str">10</span>);  <span class="fn">year_to_words</span>(<span class="str">2026</span>);  <span class="fn">time_to_words</span>(<span class="str">14</span>, <span class="str">30</span>);</pre>
+      </div>
+
+      <p class="demo-note" id="wasm-note" data-i18n="demo.loading">Загрузка WebAssembly…</p>
     </div>
   </div>
 </section>
 
 <!-- FEATURES -->
-<section>
+<section id="features">
   <div class="wrap">
-    <h2>Why chislo</h2>
-    <p class="sub">Russian numerals are deceptively hard. chislo handles the grammar so you don't have to.</p>
+    <h2 data-i18n="feat.h2">Почему chislo</h2>
+    <p class="sub" data-i18n="feat.sub">Русские числительные обманчиво сложны. chislo берёт грамматику на себя.</p>
     <div class="grid">
-      <div class="feat"><div class="ico">⚖️</div><h3>Grammatically correct</h3>
-        <p>Three genders (<span class="mono">один / одна / одно</span>), full noun declension, and proper decimal agreement (<span class="mono">одна целая</span>, not <span class="mono">один целых</span>).</p></div>
-      <div class="feat"><div class="ico">🧾</div><h3>Built for documents</h3>
-        <p>Money, percentages, durations, dates &amp; times, and fractions — everything receipts, invoices and payment orders need.</p></div>
-      <div class="feat"><div class="ico">💱</div><h3>11 currencies</h3>
-        <p>RUB, USD, EUR, GBP, CNY, JPY, KZT, BYN, UAH, CHF, AED out of the box, plus ISO 4217 lookup and custom currencies.</p></div>
-      <div class="feat"><div class="ico">⚡</div><h3>Zero-alloc dictionary</h3>
-        <p>All data lives in <span class="mono">const</span>; fluent <span class="mono">Display</span> wrappers format straight into <span class="mono">write!</span> with no extra <span class="mono">String</span>.</p></div>
-      <div class="feat"><div class="ico">🪶</div><h3>Tiny &amp; portable</h3>
-        <p><span class="mono">no_std</span> with <span class="mono">alloc</span>, optional <span class="mono">rust_decimal</span>, and WASM bindings via <span class="mono">wasm-bindgen</span>.</p></div>
-      <div class="feat"><div class="ico">🦀</div><h3>i64 range</h3>
-        <p>Integers up to quintillions; the scale dictionary reaches 10³⁹ (duodecillions).</p></div>
+      <div class="feat"><div class="ico">⚖️</div><h3 data-i18n="feat.1.h">Грамматически верно</h3>
+        <p data-i18n="feat.1.p">Три рода (<span class="mono">один / одна / одно</span>), полное склонение существительных и правильное согласование десятичных (<span class="mono">одна целая</span>, а не <span class="mono">один целых</span>).</p></div>
+      <div class="feat"><div class="ico">🧾</div><h3 data-i18n="feat.2.h">Создано для документов</h3>
+        <p data-i18n="feat.2.p">Деньги, проценты, длительность, даты и время, дроби — всё, что нужно чекам, счетам и платёжным поручениям.</p></div>
+      <div class="feat"><div class="ico">💱</div><h3 data-i18n="feat.3.h">11 валют</h3>
+        <p data-i18n="feat.3.p">RUB, USD, EUR, GBP, CNY, JPY, KZT, BYN, UAH, CHF, AED из коробки, плюс поиск по ISO 4217 и свои валюты.</p></div>
+      <div class="feat"><div class="ico">⚡</div><h3 data-i18n="feat.4.h">Словарь без аллокаций</h3>
+        <p data-i18n="feat.4.p">Все данные живут в <span class="mono">const</span>; плавные обёртки <span class="mono">Display</span> пишут прямо в <span class="mono">write!</span> без лишней <span class="mono">String</span>.</p></div>
+      <div class="feat"><div class="ico">🪶</div><h3 data-i18n="feat.5.h">Компактна и портативна</h3>
+        <p data-i18n="feat.5.p"><span class="mono">no_std</span> с <span class="mono">alloc</span>, опциональный <span class="mono">rust_decimal</span> и WASM-биндинги через <span class="mono">wasm-bindgen</span>.</p></div>
+      <div class="feat"><div class="ico">🦀</div><h3 data-i18n="feat.6.h">Диапазон i64</h3>
+        <p data-i18n="feat.6.p">Целые до квинтиллионов; словарь разрядов доходит до 10³⁹ (дуодециллионы).</p></div>
     </div>
   </div>
 </section>
@@ -178,76 +351,281 @@
 <!-- CODE -->
 <section style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="wrap">
-    <h2>One look, and you get it</h2>
-    <p class="sub">Add the crate and start converting.</p>
-<pre><span class="kw">use</span> chislo::{<span class="fn">int_to_words</span>, <span class="fn">decline</span>, <span class="fn">ordinal</span>, <span class="fn">money</span>, <span class="fn">date_to_words</span>, Gender, RUB};
+    <h2 data-i18n="code.h2">Один взгляд — и всё понятно</h2>
+    <p class="sub" data-i18n="code.sub">Добавьте крейт и начните преобразовывать числа.</p>
+<pre><span class="kw">use</span> chislo::{<span class="fn">int_to_words</span>, <span class="fn">decline</span>, <span class="fn">ordinal</span>, <span class="fn">money</span>, <span class="fn">percent</span>, <span class="fn">fraction</span>, <span class="fn">duration_hms</span>, <span class="fn">date_to_words</span>, <span class="ty">Gender</span>, <span class="ty">RUB</span>};
 
 <span class="fn">int_to_words</span>(<span class="str">42</span>);                          <span class="cmt">// "сорок два"</span>
 <span class="fn">decline</span>(<span class="str">5</span>, <span class="str">"рубль"</span>, <span class="str">"рубля"</span>, <span class="str">"рублей"</span>);   <span class="cmt">// "рублей"</span>
-<span class="fn">ordinal</span>(<span class="str">2026</span>, Gender::Masculine);        <span class="cmt">// "две тысячи двадцать шестой"</span>
-<span class="fn">money</span>(<span class="str">1234</span>, <span class="str">56</span>, &amp;RUB);
-<span class="cmt">// "одна тысяча двести тридцать четыре рубля пятьдесят шесть копеек"</span>
-<span class="fn">date_to_words</span>(<span class="str">2026</span>, <span class="str">4</span>, <span class="str">10</span>);                <span class="cmt">// "десятое апреля две тысячи двадцать шестого года"</span></pre>
+<span class="fn">ordinal</span>(<span class="str">2026</span>, <span class="ty">Gender</span>::Masculine);        <span class="cmt">// "две тысячи двадцать шестой"</span>
+<span class="fn">money</span>(<span class="str">1234</span>, <span class="str">56</span>, &amp;<span class="ty">RUB</span>);                  <span class="cmt">// "…тридцать четыре рубля пятьдесят шесть копеек"</span>
+<span class="fn">percent</span>(<span class="str">42</span>);                          <span class="cmt">// "сорок два процента"</span>
+<span class="fn">fraction</span>(<span class="str">1</span>, <span class="str">2</span>);                        <span class="cmt">// "одна вторая"</span>
+<span class="fn">duration_hms</span>(<span class="str">1</span>, <span class="str">30</span>, <span class="str">0</span>);                <span class="cmt">// "один час тридцать минут"</span>
+<span class="fn">date_to_words</span>(<span class="str">2026</span>, <span class="str">4</span>, <span class="str">10</span>);            <span class="cmt">// "десятое апреля две тысячи двадцать шестого года"</span></pre>
     <div class="cta" style="justify-content:flex-start">
-      <a class="btn primary" href="api/chislo/index.html">Browse the full rustdoc →</a>
-      <a class="btn" href="https://github.com/rekurt/chislo/tree/master/examples">More examples</a>
+      <a class="btn primary" href="api/chislo/index.html" data-i18n="code.rustdoc">Открыть полный rustdoc →</a>
+      <a class="btn" href="https://github.com/rekurt/chislo/tree/master/examples" data-i18n="code.examples">Больше примеров</a>
     </div>
   </div>
 </section>
 
 <footer>
-  <p>
-    <a href="https://crates.io/crates/chislo">crates.io</a> ·
-    <a href="https://docs.rs/chislo">docs.rs</a> ·
-    <a href="api/chislo/index.html">rustdoc</a> ·
-    <a href="https://github.com/rekurt/chislo">GitHub</a> ·
+  <div class="links">
+    <a href="https://crates.io/crates/chislo">crates.io</a>
+    <a href="https://docs.rs/chislo">docs.rs</a>
+    <a href="api/chislo/index.html">rustdoc</a>
+    <a href="https://github.com/rekurt/chislo">GitHub</a>
     <a href="https://github.com/rekurt/go-propisyu">go-propisyu</a>
-  </p>
-  <p>MIT © rekurt · числа прописью на русском языке</p>
+  </div>
+  <p data-i18n="footer.note">MIT © rekurt · числа прописью на русском языке</p>
 </footer>
 
-<script type="module">
-  const $ = (id) => document.getElementById(id);
-  const note = $("wasm-note");
-  let wasm = null;
+<script>
+  // ---- i18n ----------------------------------------------------------------
+  const I18N = {
+    ru: {
+      "nav.demo":"Песочница","nav.features":"Возможности",
+      "hero.title":"числа прописью",
+      "hero.tagline":"Превращает любое число в правильные русские слова — род, склонение существительных, валюты, проценты, дроби, длительность, даты и время. Быстрый, нетребовательный к зависимостям крейт на Rust.",
+      "hero.try":"▶ Попробовать вживую","hero.apidocs":"📖 Документация API","hero.rustdoc":"🦀 rustdoc","hero.github":"★ GitHub",
+      "hero.pill":"no_std · WASM · словарь без аллокаций",
+      "demo.h2":"Интерактивная песочница",
+      "demo.sub":"Работает целиком в браузере через собственные WebAssembly-биндинги крейта. Те же примеры, что в репозитории, — только теперь их можно потрогать.",
+      "demo.loading":"Загрузка WebAssembly…","demo.ready":"WebAssembly загружен — меняйте значения, чтобы пересчитать.",
+      "demo.unavailable":"Живая песочница недоступна в этой сборке — смотрите примеры кода ниже.",
+      "tab.int":"Число","tab.money":"Деньги","tab.percent":"Проценты","tab.fraction":"Дроби","tab.duration":"Длительность","tab.date":"Дата и время",
+      "int.desc":"Целые и десятичные числа с грамматическим родом и склонением существительного.",
+      "int.number":"Число","int.ph":"например, 1234 или 3.14","int.gender":"Род",
+      "int.one":"форма «1»","int.two":"форма «2»","int.five":"форма «5»",
+      "int.card":"Количественное","int.ord":"Порядковое","int.dec":"Десятичное","int.noun":"С существительным",
+      "gender.m":"мужской · masculine","gender.f":"женский · feminine","gender.n":"средний · neuter",
+      "money.desc":"Сумма прописью с правильным склонением валюты и копеек — для чеков, счетов и платёжек.",
+      "money.amount":"Сумма","money.currency":"Валюта","money.result":"Прописью",
+      "percent.desc":"Целые и дробные проценты с верным согласованием слова «процент».",
+      "percent.value":"Значение","percent.result":"Прописью",
+      "fraction.desc":"Простые и смешанные дроби. Оставьте целую часть равной нулю для простой дроби.",
+      "fraction.whole":"Целая","fraction.numer":"Числитель","fraction.denom":"Знаменатель","fraction.result":"Прописью",
+      "duration.desc":"Длительность из часов-минут-секунд или из общего числа секунд.",
+      "duration.h":"Часы","duration.m":"Минуты","duration.s":"Секунды","duration.total":"Всего секунд",
+      "duration.hms":"Из ч:м:с","duration.fromsecs":"Из секунд",
+      "date.desc":"Дата, год и время прописью — для договоров и документов.",
+      "date.year":"Год","date.month":"Месяц","date.day":"День","date.hour":"Час","date.min":"Минута",
+      "date.full":"Дата","date.yearw":"Год","date.timew":"Время",
+      "feat.h2":"Почему chislo","feat.sub":"Русские числительные обманчиво сложны. chislo берёт грамматику на себя.",
+      "feat.1.h":"Грамматически верно","feat.1.p":"Три рода (<span class=\"mono\">один / одна / одно</span>), полное склонение существительных и правильное согласование десятичных (<span class=\"mono\">одна целая</span>, а не <span class=\"mono\">один целых</span>).",
+      "feat.2.h":"Создано для документов","feat.2.p":"Деньги, проценты, длительность, даты и время, дроби — всё, что нужно чекам, счетам и платёжным поручениям.",
+      "feat.3.h":"11 валют","feat.3.p":"RUB, USD, EUR, GBP, CNY, JPY, KZT, BYN, UAH, CHF, AED из коробки, плюс поиск по ISO 4217 и свои валюты.",
+      "feat.4.h":"Словарь без аллокаций","feat.4.p":"Все данные живут в <span class=\"mono\">const</span>; плавные обёртки <span class=\"mono\">Display</span> пишут прямо в <span class=\"mono\">write!</span> без лишней <span class=\"mono\">String</span>.",
+      "feat.5.h":"Компактна и портативна","feat.5.p":"<span class=\"mono\">no_std</span> с <span class=\"mono\">alloc</span>, опциональный <span class=\"mono\">rust_decimal</span> и WASM-биндинги через <span class=\"mono\">wasm-bindgen</span>.",
+      "feat.6.h":"Диапазон i64","feat.6.p":"Целые до квинтиллионов; словарь разрядов доходит до 10³⁹ (дуодециллионы).",
+      "code.h2":"Один взгляд — и всё понятно","code.sub":"Добавьте крейт и начните преобразовывать числа.",
+      "code.rustdoc":"Открыть полный rustdoc →","code.examples":"Больше примеров",
+      "footer.note":"MIT © rekurt · числа прописью на русском языке"
+    },
+    en: {
+      "nav.demo":"Playground","nav.features":"Features",
+      "hero.title":"числа прописью",
+      "hero.tagline":"Turns any number into correct Russian words — gender, noun declension, currency, percentages, fractions, duration, dates and times. A fast, dependency-light Rust crate.",
+      "hero.try":"▶ Try it live","hero.apidocs":"📖 API docs","hero.rustdoc":"🦀 rustdoc","hero.github":"★ GitHub",
+      "hero.pill":"no_std · WASM · zero-alloc dictionary",
+      "demo.h2":"Interactive playground",
+      "demo.sub":"Runs entirely in your browser via the crate's own WebAssembly bindings. The same examples as in the repository — now you can actually play with them.",
+      "demo.loading":"Loading WebAssembly…","demo.ready":"WebAssembly loaded — change the inputs to recalculate.",
+      "demo.unavailable":"Live playground unavailable in this build — see the code examples below.",
+      "tab.int":"Number","tab.money":"Money","tab.percent":"Percent","tab.fraction":"Fractions","tab.duration":"Duration","tab.date":"Date & time",
+      "int.desc":"Integers and decimals with grammatical gender and noun declension.",
+      "int.number":"Number","int.ph":"e.g. 1234 or 3.14","int.gender":"Gender",
+      "int.one":"form “1”","int.two":"form “2”","int.five":"form “5”",
+      "int.card":"Cardinal","int.ord":"Ordinal","int.dec":"Decimal","int.noun":"With noun",
+      "gender.m":"masculine · мужской","gender.f":"feminine · женский","gender.n":"neuter · средний",
+      "money.desc":"Amounts in words with correct currency and sub-unit declension — for receipts, invoices and payment orders.",
+      "money.amount":"Amount","money.currency":"Currency","money.result":"In words",
+      "percent.desc":"Whole and fractional percentages with correct agreement of “процент”.",
+      "percent.value":"Value","percent.result":"In words",
+      "fraction.desc":"Simple and mixed fractions. Leave the whole part at zero for a simple fraction.",
+      "fraction.whole":"Whole","fraction.numer":"Numerator","fraction.denom":"Denominator","fraction.result":"In words",
+      "duration.desc":"Duration from hours-minutes-seconds, or from a total number of seconds.",
+      "duration.h":"Hours","duration.m":"Minutes","duration.s":"Seconds","duration.total":"Total seconds",
+      "duration.hms":"From h:m:s","duration.fromsecs":"From seconds",
+      "date.desc":"Date, year and time in words — for contracts and documents.",
+      "date.year":"Year","date.month":"Month","date.day":"Day","date.hour":"Hour","date.min":"Minute",
+      "date.full":"Date","date.yearw":"Year","date.timew":"Time",
+      "feat.h2":"Why chislo","feat.sub":"Russian numerals are deceptively hard. chislo handles the grammar so you don't have to.",
+      "feat.1.h":"Grammatically correct","feat.1.p":"Three genders (<span class=\"mono\">один / одна / одно</span>), full noun declension and proper decimal agreement (<span class=\"mono\">одна целая</span>, not <span class=\"mono\">один целых</span>).",
+      "feat.2.h":"Built for documents","feat.2.p":"Money, percentages, durations, dates &amp; times, and fractions — everything receipts, invoices and payment orders need.",
+      "feat.3.h":"11 currencies","feat.3.p":"RUB, USD, EUR, GBP, CNY, JPY, KZT, BYN, UAH, CHF, AED out of the box, plus ISO 4217 lookup and custom currencies.",
+      "feat.4.h":"Zero-alloc dictionary","feat.4.p":"All data lives in <span class=\"mono\">const</span>; fluent <span class=\"mono\">Display</span> wrappers format straight into <span class=\"mono\">write!</span> with no extra <span class=\"mono\">String</span>.",
+      "feat.5.h":"Tiny &amp; portable","feat.5.p":"<span class=\"mono\">no_std</span> with <span class=\"mono\">alloc</span>, optional <span class=\"mono\">rust_decimal</span>, and WASM bindings via <span class=\"mono\">wasm-bindgen</span>.",
+      "feat.6.h":"i64 range","feat.6.p":"Integers up to quintillions; the scale dictionary reaches 10³⁹ (duodecillions).",
+      "code.h2":"One look, and you get it","code.sub":"Add the crate and start converting.",
+      "code.rustdoc":"Browse the full rustdoc →","code.examples":"More examples",
+      "footer.note":"MIT © rekurt · Russian number-to-words"
+    },
+    zh: {
+      "nav.demo":"演练场","nav.features":"功能",
+      "hero.title":"числа прописью",
+      "hero.tagline":"将任意数字转换为正确的俄语词形 —— 语法性别、名词变格、货币、百分比、分数、时长、日期与时间。一个快速、依赖极少的 Rust crate。",
+      "hero.try":"▶ 在线试用","hero.apidocs":"📖 API 文档","hero.rustdoc":"🦀 rustdoc","hero.github":"★ GitHub",
+      "hero.pill":"no_std · WASM · 零分配词典",
+      "demo.h2":"交互式演练场",
+      "demo.sub":"通过 crate 自带的 WebAssembly 绑定完全在浏览器中运行。与仓库中相同的示例 —— 现在可以亲手体验。",
+      "demo.loading":"正在加载 WebAssembly…","demo.ready":"WebAssembly 已加载 —— 修改输入即可重新计算。",
+      "demo.unavailable":"此构建中无法使用在线演练场 —— 请参阅下方代码示例。",
+      "tab.int":"数字","tab.money":"货币","tab.percent":"百分比","tab.fraction":"分数","tab.duration":"时长","tab.date":"日期与时间",
+      "int.desc":"带语法性别和名词变格的整数与小数。",
+      "int.number":"数字","int.ph":"例如 1234 或 3.14","int.gender":"性别",
+      "int.one":"形式「1」","int.two":"形式「2」","int.five":"形式「5」",
+      "int.card":"基数","int.ord":"序数","int.dec":"小数","int.noun":"带名词",
+      "gender.m":"阳性 · masculine","gender.f":"阴性 · feminine","gender.n":"中性 · neuter",
+      "money.desc":"带正确货币与辅币变格的金额词形 —— 适用于收据、发票和付款单。",
+      "money.amount":"金额","money.currency":"货币","money.result":"词形",
+      "percent.desc":"整数与小数百分比，正确处理「процент」的词形一致。",
+      "percent.value":"数值","percent.result":"词形",
+      "fraction.desc":"简单分数与带分数。整数部分填 0 即为简单分数。",
+      "fraction.whole":"整数","fraction.numer":"分子","fraction.denom":"分母","fraction.result":"词形",
+      "duration.desc":"由时-分-秒或总秒数生成时长。",
+      "duration.h":"小时","duration.m":"分钟","duration.s":"秒","duration.total":"总秒数",
+      "duration.hms":"由 时:分:秒","duration.fromsecs":"由秒数",
+      "date.desc":"日期、年份和时间的词形 —— 适用于合同和文件。",
+      "date.year":"年","date.month":"月","date.day":"日","date.hour":"时","date.min":"分",
+      "date.full":"日期","date.yearw":"年份","date.timew":"时间",
+      "feat.h2":"为什么选择 chislo","feat.sub":"俄语数词出乎意料地复杂。chislo 替你处理语法。",
+      "feat.1.h":"语法正确","feat.1.p":"三种性别（<span class=\"mono\">один / одна / одно</span>）、完整的名词变格，以及正确的小数一致（<span class=\"mono\">одна целая</span>，而非 <span class=\"mono\">один целых</span>）。",
+      "feat.2.h":"为文档而生","feat.2.p":"货币、百分比、时长、日期与时间、分数 —— 收据、发票和付款单所需的一切。",
+      "feat.3.h":"11 种货币","feat.3.p":"开箱即用 RUB、USD、EUR、GBP、CNY、JPY、KZT、BYN、UAH、CHF、AED，还支持 ISO 4217 查询和自定义货币。",
+      "feat.4.h":"零分配词典","feat.4.p":"所有数据存于 <span class=\"mono\">const</span>；流式 <span class=\"mono\">Display</span> 包装直接写入 <span class=\"mono\">write!</span>，无额外 <span class=\"mono\">String</span>。",
+      "feat.5.h":"小巧且可移植","feat.5.p":"<span class=\"mono\">no_std</span> 配合 <span class=\"mono\">alloc</span>、可选的 <span class=\"mono\">rust_decimal</span>，以及通过 <span class=\"mono\">wasm-bindgen</span> 的 WASM 绑定。",
+      "feat.6.h":"i64 范围","feat.6.p":"整数可达千万亿级；进位词典覆盖至 10³⁹（杜德希里昂）。",
+      "code.h2":"一看就懂","code.sub":"添加 crate，即可开始转换。",
+      "code.rustdoc":"浏览完整 rustdoc →","code.examples":"更多示例",
+      "footer.note":"MIT © rekurt · 俄语数字转文字"
+    }
+  };
 
-  try {
-    const mod = await import("./pkg/chislo.js");
-    await mod.default();           // init()
-    wasm = mod;
-    note.innerHTML = '<span style="color:var(--ok)">●</span> WebAssembly loaded — type to convert.';
-  } catch (e) {
-    // Graceful degradation: hide the live demo if the wasm bundle is missing.
-    note.textContent = "Live demo unavailable in this build — see the code examples below.";
-    $("results").style.opacity = .5;
-    console.warn("chislo wasm not available:", e);
+  const LS_KEY = "chislo-lang";
+  let lang = (() => { try { return localStorage.getItem(LS_KEY) || "ru"; } catch { return "ru"; } })();
+  if (!I18N[lang]) lang = "ru";
+
+  function applyLang(l) {
+    lang = I18N[l] ? l : "ru";
+    const dict = I18N[lang];
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const v = dict[el.getAttribute("data-i18n")];
+      if (v != null) el.innerHTML = v;
+    });
+    document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+      const v = dict[el.getAttribute("data-i18n-ph")];
+      if (v != null) el.setAttribute("placeholder", v);
+    });
+    document.querySelectorAll(".lang button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+    try { localStorage.setItem(LS_KEY, lang); } catch {}
+    setNote();
+  }
+  document.querySelectorAll(".lang button").forEach(b =>
+    b.addEventListener("click", () => applyLang(b.dataset.lang)));
+
+  // ---- tabs ----------------------------------------------------------------
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      const id = tab.dataset.tab;
+      document.querySelectorAll(".tab").forEach(t =>
+        t.setAttribute("aria-selected", String(t === tab)));
+      document.querySelectorAll(".panel").forEach(p =>
+        p.classList.toggle("active", p.dataset.panel === id));
+    });
+  });
+
+  // ---- wasm playground -----------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  let wasm = null, wasmState = "loading";
+
+  function setNote() {
+    const note = $("wasm-note");
+    if (!note) return;
+    const dict = I18N[lang];
+    if (wasmState === "ready")       note.innerHTML = '<span style="color:var(--ok)">●</span> ' + dict["demo.ready"];
+    else if (wasmState === "error")  note.textContent = dict["demo.unavailable"];
+    else                             note.textContent = dict["demo.loading"];
   }
 
   function setRes(id, fn) {
     const el = $(id);
+    if (!el) return;
     try { el.textContent = fn(); el.classList.remove("err"); }
     catch (err) { el.textContent = "—"; el.classList.add("err"); }
   }
 
+  // i64/u64 params cross the wasm boundary as BigInt; i32/u32 as plain Number.
+  const intOf = (v) => { const n = parseInt(String(v).trim(), 10); if (!Number.isFinite(n)) throw new Error("nan"); return BigInt(n); };
+  const u = (v) => { const n = parseInt(String(v).trim(), 10); if (!Number.isFinite(n) || n < 0) throw new Error("nan"); return BigInt(n); };
+  const u32 = (v) => { const n = parseInt(String(v).trim(), 10); if (!Number.isFinite(n) || n < 0) throw new Error("nan"); return n; };
+  const i32 = (v) => { const n = parseInt(String(v).trim(), 10); if (!Number.isFinite(n)) throw new Error("nan"); return n; };
+
   function render() {
     if (!wasm) return;
-    const raw = $("num").value.trim().replace(",", ".");
-    const gender = $("gender").value;
-    const isDecimal = raw.includes(".");
-    const intVal = parseInt(raw, 10);
-    const [n1, n2, n5] = [$("n1").value, $("n2").value, $("n5").value];
 
-    setRes("r-card", () => isDecimal ? "—" : wasm.intToWordsGender(BigInt(intVal), gender));
-    setRes("r-ord",  () => isDecimal ? "—" : wasm.ordinal(BigInt(intVal), gender));
-    setRes("r-dec",  () => wasm.decimalToWords(raw));
-    setRes("r-noun", () => isDecimal ? "—" : `${wasm.intToWordsGender(BigInt(intVal), gender)} ${wasm.decline(BigInt(intVal), n1, n2, n5)}`);
+    // integer
+    {
+      const raw = $("i-num").value.trim().replace(",", ".");
+      const gender = $("i-gender").value;
+      const isDecimal = raw.includes(".");
+      const [n1, n2, n5] = [$("i-n1").value, $("i-n2").value, $("i-n5").value];
+      setRes("r-card", () => isDecimal ? "—" : wasm.intToWordsGender(intOf(raw), gender));
+      setRes("r-ord",  () => isDecimal ? "—" : wasm.ordinal(intOf(raw), gender));
+      setRes("r-dec",  () => wasm.decimalToWords(raw));
+      setRes("r-noun", () => isDecimal ? "—" : `${wasm.intToWordsGender(intOf(raw), gender)} ${wasm.decline(intOf(raw), n1, n2, n5)}`);
+    }
+    // money
+    setRes("r-money", () => wasm.moneyFromStr($("m-amount").value.trim().replace(",", "."), $("m-cur").value));
+    // percent
+    {
+      const raw = $("p-val").value.trim().replace(",", ".");
+      setRes("r-pct", () => raw.includes(".") ? wasm.percentDecimal(raw) : wasm.percent(intOf(raw)));
+    }
+    // fraction
+    {
+      const w = $("f-whole").value, num = $("f-num").value, den = $("f-den").value;
+      setRes("r-frac", () => {
+        const wi = intOf(w);
+        return wi === 0n ? wasm.fraction(intOf(num), u32(den))
+                         : wasm.mixedFraction(wi, intOf(num), u32(den));
+      });
+    }
+    // duration
+    setRes("r-dhms", () => wasm.durationHms(u($("d-h").value), u($("d-m").value), u($("d-s").value)));
+    setRes("r-dsec", () => wasm.durationFromSecs(u($("d-total").value)));
+    // date / time
+    setRes("r-date", () => wasm.dateToWords(i32($("dt-y").value), u32($("dt-mo").value), u32($("dt-d").value)));
+    setRes("r-year", () => wasm.yearToWords(u($("dt-y").value)));
+    setRes("r-time", () => wasm.timeToWords(u32($("dt-h").value), u32($("dt-mi").value)));
   }
 
-  ["num","gender","n1","n2","n5"].forEach(id => {
-    $(id).addEventListener("input", render);
-    $(id).addEventListener("change", render);
+  // wire every input/select in the demo box
+  document.querySelectorAll(".demo-box input, .demo-box select").forEach(el => {
+    el.addEventListener("input", render);
+    el.addEventListener("change", render);
   });
-  render();
+
+  // boot
+  applyLang(lang);
+  (async () => {
+    try {
+      const mod = await import("./pkg/chislo.js");
+      await mod.default();
+      wasm = mod;
+      wasmState = "ready";
+      setNote();
+      render();
+    } catch (e) {
+      wasmState = "error";
+      setNote();
+      document.querySelectorAll(".results").forEach(r => r.style.opacity = .5);
+      console.warn("chislo wasm not available:", e);
+    }
+  })();
 </script>
 </body>
 </html>
